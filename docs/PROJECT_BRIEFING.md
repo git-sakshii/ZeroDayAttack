@@ -28,7 +28,7 @@ The source CSV had 2,520,751 rows, 52 numeric flow features, and the label colum
 
 Because these labels are aggregated, our “family” conclusions are limited to these six broad attack categories. We cannot claim fine-grained attack-type results from this file.
 
-We also evaluated transfer to the fixed UNSW-NB15 test partition: 82,332 rows, including 37,000 benign and 45,332 attacks across nine attack categories. The official row counts and partition fingerprints were checked. The local files are not committed to the public repository; download provenance, full SHA-256 values, and the citation are in `DATASETS.md` and `results/cross_dataset_unsw/cross_dataset_run.json`.
+We also evaluated transfer to the fixed UNSW-NB15 test partition: 82,332 rows, including 37,000 benign and 45,332 attacks across nine attack categories. The row counts, normal/attack counts, labels, and feature layout were checked against the documented partition profile. SHA-256 hashes pin the exact mirror copies; UNSW does not publish checksums, so the copies are not independently authenticated byte-for-byte against provider files. The local files are not committed to the public repository; download provenance, full SHA-256 values, and the citation are in `DATASETS.md` and `results/cross_dataset_unsw/cross_dataset_run.json`.
 
 ## 3. How the experiment works
 
@@ -78,10 +78,10 @@ The following is the saved full-data comparison for Isolation Forest, PCA, and f
 | Detector | Macro recall at 0.1% target FPR | Macro recall at 1% target FPR | Worst-family recall |
 |---|---:|---:|---:|
 | Isolation Forest | 0.0% | 9.0% | 0.0% at both budgets |
-| PCA reconstruction | 5.3% | 19.2% | 0.0% at both budgets |
+| PCA reconstruction | 5.3% | 19.2% | 0.0% at 0.1%; 0.0022% at 1% |
 | IF + PCA rank fusion | 7.4% | 15.3% | 0.0% at both budgets |
 
-Mean observed benign-test FPRs were close to targets: about 0.09–0.10% at the 0.1% budget, and 0.99–1.01% at the 1% budget. PCA had the highest macro recall at 1%; fusion had the highest at 0.1%. Every method missed at least one held-out family completely at each budget. Friedman comparisons across six family blocks did not show a statistically significant difference (p=0.097 at 0.1%, p=0.094 at 1%). This is insufficient evidence to distinguish methods, not proof they are equivalent.
+Mean observed benign-test FPRs were close to targets: about 0.09–0.10% at the 0.1% budget, and 0.99–1.01% at the 1% budget. PCA had the highest macro recall at 1%; fusion had the highest at 0.1%. Five of the six method-budget pairs had exactly zero worst-family recall; PCA reached only 0.0022% for its lowest-recall family at the 1% budget. Friedman comparisons across six family blocks did not show a statistically significant difference (p=0.097 at 0.1%, p=0.094 at 1%). The family blocks reuse benign partitions, so treat this as exploratory evidence, not proof that the methods are equivalent.
 
 The autoencoder LOFO run is separate and **exploratory**: it capped the sample at 50,000 rows per family due to CPU runtime. Macro recall was 3.4% at the 0.1% target budget and 21.5% at 1%, with worst-family recall of 0% and 0.03%, respectively. Its sample prevalence differs from the full dataset, so its AUPR/precision should not be compared directly to full-data metrics.
 
@@ -89,7 +89,7 @@ The autoencoder LOFO run is separate and **exploratory**: it capped the sample a
 
 We reran Isolation Forest, PCA, and rank fusion on a nine-feature semantic intersection, allowing a within-CIC reference and a CIC-to-UNSW transfer comparison in the same input space. The features cover duration, directional packet/byte measurements, mean packet lengths, flow byte rate, and TCP initial window sizes. CIC duration was converted from microseconds to seconds; CIC backward packet count and UNSW total flow byte rate were derived using the documented formulas. Argus/Bro and CICFlowMeter compute flow features differently, so this mapping remains approximate.
 
-The models and preprocessors were fit using CIC benign training rows only. Thresholds were calibrated on CIC benign calibration rows only, then frozen for scoring the entire official UNSW-NB15 test partition. UNSW labels were evaluation-only. Values below average three seeds; these repeat the same public benchmark and do not represent independent network captures. “Target FPR” means the CIC calibration target. The final column is the measured benign FPR on UNSW, which can shift.
+The models and preprocessors were fit using CIC benign training rows only. Thresholds were calibrated on CIC benign calibration rows only, then frozen for scoring the entire fixed UNSW-NB15 test-partition mirror. UNSW labels were evaluation-only. Values below average three seeds; these repeat the same public benchmark and do not represent independent network captures. “Target FPR” means the CIC calibration target. The final column is the measured benign FPR on UNSW, which can shift.
 
 | CIC calibration target | Model | CIC macro family recall | UNSW macro family recall | CIC benign test FPR | UNSW benign test FPR |
 |---:|---|---:|---:|---:|---:|
@@ -195,7 +195,7 @@ A: No. It is the intended benign calibration exceedance rate used to choose the 
 A: No. It is a thresholded anomaly score and a lead for investigation.
 
 **Q: Which model won?**  
-A: No one model won at both operating points. PCA had highest macro recall at the 1% target; fusion led at 0.1%. Differences were not statistically significant in the six-family comparison, and worst-family recall was zero for all three full-data methods.
+A: No one model won at both operating points. PCA had highest macro recall at the 1% target; fusion led at 0.1%. Differences were not statistically significant in the six-family comparison. Worst-family recall was zero for all methods at 0.1%; at 1%, it was zero for Isolation Forest and fusion and 0.0022% for PCA.
 
 **Q: Why did the dashboard balanced replay autoencoder have the most recall?**  
 A: That is a small, intentionally balanced demonstration file, not the fixed-FPR LOFO comparison. It also had a higher benign FPR. We should not use it alone to declare a winner.
@@ -204,7 +204,7 @@ A: That is a small, intentionally balanced demonstration file, not the fixed-FPR
 A: The unsupervised anomaly models were fit on benign training rows. Labels were used to create held-out-family evaluation groups and calculate evaluation metrics, not to fit or calibrate the detectors.
 
 **Q: What did the cross-dataset experiment show?**
-A: We trained and calibrated on CIC benign traffic, then froze the pipeline for the official UNSW-NB15 test partition using nine mapped features. CIC-calibrated thresholds did not preserve their FPR on UNSW: observed benign FPR reached about 5.9–7.6% at the 1% calibration target. The feature mapping and datasets are imperfect testbed proxies, so this is a limited transfer result.
+A: We trained and calibrated on CIC benign traffic, then froze the pipeline for the fixed UNSW-NB15 test-partition mirror using nine mapped features. CIC-calibrated thresholds did not preserve their FPR on UNSW: observed benign FPR reached about 5.9–7.6% at the 1% calibration target. The feature mapping and datasets are imperfect testbed proxies, so this is a limited transfer result.
 
 **Q: What is the main weakness today?**  
 A: Generalization is weak for some held-out families at low false-positive budgets; transfer causes substantial false-alarm drift; and live capture is not implemented.
@@ -235,3 +235,4 @@ A: No. It is a research prototype that flags anomalous flows for review. It does
 - Run metadata and checksums: `results/cicids2017_core/run.json`
 
 All data and result paths above are local files and are not in the public repository. Recreate them by obtaining the dataset and following the repository README.
+

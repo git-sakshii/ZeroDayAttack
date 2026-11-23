@@ -92,3 +92,4 @@ The analysis averages repeated seeds within each dataset-family trial before sta
 ## Current real-data run
 
 The supplied Kaggle archive and its audit record are documented in `DATASETS.md`. The extracted CSV is `data/raw/cicids2017_cleaned.csv`; the cleaned Parquet is `data/processed/cicids2017_cleaned.parquet`. The predeclared family schedule is in `configs/family_schedule.json`. The first full-data LOFO comparison (Isolation Forest, PCA, and rank fusion; three seeds; 1% and 0.1% FPR budgets) is in `results/cicids2017_core/`, with statistical summaries in `results/cicids2017_analysis/`.
+

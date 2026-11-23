@@ -1,13 +1,14 @@
-# Evaluating Benign-Only Anomaly Detectors on Held-Out Network Attack Families
+# Evaluating Benign Only Network Anomaly Detectors on Held Out Families and Across Datasets
 
 **Sakshi Singh, Rushil Chaudhary, Zoya Parveen, Yashsvi Sharma**  
 Department of Computer Science and Engineering (Artificial Intelligence), Galgotias College of Engineering & Technology, Greater Noida, India  
-**Course / instructor:** [fill in]  
-**Citation style:** IEEE (assumed; confirm with instructor)
+**Course / instructor:** [To be completed]  
+**Submission venue:** [To be completed]  
+**AI assistance disclosure:** [Complete according to college policy]
 
 ## Abstract
 
-Network intrusion detectors are often evaluated on attack classes represented during training, which does not directly measure behavior on an unseen attack category. This study compares three benign-only anomaly-detection strategies on a Kaggle-prepared CICIDS2017 derivative using leave-one-attack-family-out (LOFO) evaluation. Isolation Forest, PCA reconstruction error, and equal-weight rank fusion were trained using benign traffic only. Thresholds were calibrated using separate benign calibration data at target false-positive rates (FPRs) of 0.1% and 1%. On the 52-feature CICIDS2017 experiment, PCA produced the highest macro recall at the 1% target FPR (19.2%); rank fusion was highest at 0.1% (7.4%), while worst-family recall was zero for all methods. A separate CICIDS2017-to-UNSW-NB15 transfer experiment used nine semantically aligned features. CIC-calibrated thresholds did not preserve the target FPR on UNSW: observed benign FPR rose as high as 7.56% at the 1% calibration target. The results show substantial held-out-family misses and cross-dataset alert-budget drift. Both are benchmark findings, not evidence of real zero-day detection; the feature mapping is approximate, and the Kaggle derivative's preprocessing was not independently reproduced or legally reviewed.
+Network intrusion detectors are often evaluated on attack classes represented during training, which does not directly measure behavior on an unseen attack category. This study compares three benign-only anomaly-detection strategies on a Kaggle-prepared CICIDS2017 derivative using leave-one-attack-family-out (LOFO) evaluation. Isolation Forest, principal component analysis (PCA) reconstruction error, and equal-weight score fusion were trained using benign traffic only. Thresholds were calibrated on separate benign data at false-positive rate (FPR) targets of 0.1% and 1%. In the 52-feature CICIDS2017 experiment, PCA had the highest macro recall at the 1% target (19.2%), while rank fusion led at 0.1% (7.4%). Worst-family recall was zero in five of the six method-budget comparisons and 0.0022% for PCA at the 1% target. A separate CICIDS2017-to-UNSW-NB15 transfer experiment used nine semantically aligned features. CIC-calibrated thresholds did not preserve the target FPR on UNSW: observed benign FPR reached 7.56% at the 1% calibration target. These benchmark results show held-out-family misses and cross-dataset alert-budget drift; they do not demonstrate real zero-day detection. The feature mapping is approximate, and the Kaggle derivative's preprocessing was not independently reproduced or legally reviewed.
 
 **Keywords:** network intrusion detection; anomaly detection; CICIDS2017; held-out families; false-positive rate; score fusion
 
@@ -21,7 +22,7 @@ We compare Isolation Forest, PCA reconstruction error, and equal-weight rank fus
 
 ## 2. Related Work
 
-Isolation Forest identifies unusual observations through random recursive partitioning [2]. PCA-based network anomaly detection uses residuals or subspace deviations to find observations that do not fit a learned low-dimensional normal pattern; prior work also highlights its sensitivity to modeling choices [3]. Shone et al. propose a nonsymmetric deep autoencoder for feature learning followed by a Random Forest classifier, evaluated on KDD Cup ’99 and NSL-KDD [8]. Their study motivates deep representation learning for intrusion detection, but it uses labeled classification on older benchmarks and lists zero-day evaluation as future work; its reported scores are not directly comparable with our benign-only held-out-family protocol. Autoencoder approaches have also been explored for online detection, including Kitsune [4]. Score fusion can combine complementary rankings but may not improve every family or operating point.
+Isolation Forest identifies unusual observations through random recursive partitioning [2]. PCA-based network anomaly detection uses residuals or subspace deviations to find observations that do not fit a learned low-dimensional normal pattern; prior work also highlights its sensitivity to modeling choices [3]. Shone et al. propose a nonsymmetric deep autoencoder for feature learning followed by a Random Forest classifier, evaluated on KDD Cup ’99 and NSL-KDD [8]. Their study motivates deep representation learning for intrusion detection, but it uses labeled classification on older benchmarks and lists zero-day evaluation as future work; its reported scores are not directly comparable with our benign-only held-out-family protocol. Autoencoder approaches have also been explored for online detection, including Kitsune [4]. Shone and coauthors title their study “A deep learning approach to network intrusion detection” [8]. Score fusion can combine complementary rankings but may not improve every family or operating point.
 
 Security ML evaluation requires careful control of leakage, realistic splits, and operational metrics. Arp et al. discuss common methodological pitfalls in machine-learning security research [1]. LOFO evaluation complements random row splits by withholding attack categories, but it remains a dataset proxy and not evidence of performance on real unseen intrusions.
 
@@ -45,7 +46,7 @@ The Kaggle dataset description links its processing notebook and project reposit
 
 ### 4.3 Cross-dataset benchmark
 
-The second dataset is UNSW-NB15, created by the UNSW Canberra Cyber Range Lab using Argus and Bro-IDS flow generation [9]. We use the fixed official test partition with 82,332 rows: 37,000 normal and 45,332 attacks across nine categories. The associated official training partition has 175,341 rows; it was used only to check the fixed release counts and was not used for model fitting or threshold calibration. The partition files were retrieved from public mirrors because the official SharePoint link was unavailable in our environment. Their full SHA-256 hashes are recorded in the run metadata; their first 16 hexadecimal characters match the published fingerprints for the official partitions. Files are excluded from the public code repository.
+The second dataset is UNSW-NB15, created by the UNSW Canberra Cyber Range Lab using Argus and Bro-IDS flow generation [9]. We use a fixed test-partition mirror with 82,332 rows: 37,000 normal and 45,332 attacks across nine categories. The associated training partition has 175,341 rows; it was used only to check the documented partition counts and was not used for model fitting or threshold calibration. The partition files were retrieved from public mirrors because the official SharePoint link was unavailable in our environment. Their row counts, labels, and feature layout were checked against the documented partition profile. Full SHA-256 hashes pin the exact mirror copies used, but UNSW does not publish corresponding checksums; they therefore do not independently authenticate byte-for-byte copies against the provider's files. Files are excluded from the public code repository.
 
 ## 5. Methods
 
@@ -73,26 +74,26 @@ At each target FPR we report family-level attack recall, macro family recall, wo
 
 To align CICIDS2017 and UNSW-NB15, the transfer experiment uses nine semantically corresponding measurements. CIC duration is converted from microseconds to seconds. CIC backward packet count is derived as `Bwd Packets/s × Flow Duration / 1,000,000`. UNSW total flow bytes per second is derived as `(sbytes + dbytes) / dur`; zero-duration rows yield a missing value handled by the median imputer fitted on CIC benign training data. CIC forward/backward fields map to UNSW source/destination fields. The selected measurements are duration; source packet count and bytes; source and destination mean packet sizes; total flow byte rate; destination packet count; and source/destination initial TCP window sizes.
 
-For each seed, benign CIC rows are split 60/20/20 into training, calibration, and in-domain benign testing. Each detector is fit on CIC benign training rows only; imputation and scaling are fit there as well. The target FPR thresholds are selected from CIC benign calibration scores and frozen. We score CIC held-out attack families and the entire official UNSW test partition with these same models and thresholds. UNSW labels are used only for evaluation. We report the CIC and UNSW observed benign FPR because a source-calibrated threshold may not maintain its alert budget after transfer. This is one transfer direction; macro family recall is descriptive because family taxonomies differ and the target dataset is one benchmark.
+For each seed, benign CIC rows are split 60/20/20 into training, calibration, and in-domain benign testing. Each detector is fit on CIC benign training rows only; imputation and scaling are fit there as well. The target FPR thresholds are selected from CIC benign calibration scores and frozen. We score CIC held-out attack families and the entire fixed UNSW test-partition mirror with these same models and thresholds. UNSW labels are used only for evaluation. We report the CIC and UNSW observed benign FPR because a source-calibrated threshold may not maintain its alert budget after transfer. This is one transfer direction; macro family recall is descriptive because family taxonomies differ and the target dataset is one benchmark.
 
 ## 6. Results
 
 ### 6.1 Main comparison
 
-| Target FPR | Detector | Macro family recall | Worst-family recall | Mean observed benign test FPR | Mean AUROC | Mean AUPR |
+| Target FPR | Detector | Macro family recall (%) [95% grouped-bootstrap CI] | Worst-family recall | Mean observed benign test FPR | Mean AUROC | Mean AUPR |
 |---:|---|---:|---:|---:|---:|---:|
-| 0.1% | Isolation Forest | 0.0% | 0.0% | 0.091% | 0.7189 | 0.2767 |
-| 0.1% | PCA reconstruction | 5.3% | 0.0% | 0.096% | 0.7881 | 0.3498 |
-| 0.1% | IF + PCA fusion | 7.4% | 0.0% | 0.098% | 0.7845 | 0.3285 |
-| 1.0% | Isolation Forest | 9.0% | 0.0% | 1.011% | 0.7189 | 0.2767 |
-| 1.0% | PCA reconstruction | 19.2% | 0.0% | 0.989% | 0.7881 | 0.3498 |
-| 1.0% | IF + PCA fusion | 15.3% | 0.0% | 1.000% | 0.7845 | 0.3285 |
+| 0.1% | Isolation Forest | 0.0 [0.0, 0.0] | 0.000% | 0.091% | 0.7189 | 0.2767 |
+| 0.1% | PCA reconstruction | 5.3 [0.1, 12.2] | 0.000% | 0.096% | 0.7881 | 0.3498 |
+| 0.1% | IF + PCA fusion | 7.4 [0.1, 20.0] | 0.000% | 0.098% | 0.7845 | 0.3285 |
+| 1.0% | Isolation Forest | 9.0 [0.0, 25.0] | 0.000% | 1.011% | 0.7189 | 0.2767 |
+| 1.0% | PCA reconstruction | 19.2 [0.4, 40.6] | 0.0022% | 0.989% | 0.7881 | 0.3498 |
+| 1.0% | IF + PCA fusion | 15.3 [0.3, 39.1] | 0.000% | 0.997% | 0.7845 | 0.3285 |
 
-PCA produced the highest macro recall at the 1% budget, while fusion produced the highest at 0.1%. Isolation Forest had the lowest macro recall at both. All three methods had zero worst-family recall at both budgets, demonstrating that aggregate averages conceal complete misses on some held-out categories. Observed benign test FPRs were near, but not exactly equal to, the calibration targets.
+PCA produced the highest macro recall at the 1% budget, while fusion produced the highest at 0.1%. Isolation Forest had the lowest macro recall at both. As Fig. 1 shows, detection was concentrated in DoS and DDoS; recall on the other families was very low. The replay bundles are demonstration artifacts with fixed replay thresholds; their balanced-sample results are illustrative, not independent validation of the primary comparison. Worst-family recall was exactly zero for all methods at 0.1%; at 1%, Isolation Forest and fusion remained at zero, while PCA reached only 0.0022%. Thus each method had at least one family with zero or effectively zero recall at both budgets. Observed benign test FPRs were close to, but not exactly equal to, the calibration targets.
 
 ### 6.2 Statistical comparison
 
-The Friedman test did not reach conventional statistical significance: at 0.1% target FPR, statistic 4.667 and p=0.0970; at 1%, statistic 4.727 and p=0.0941 (six complete family blocks). Nemenyi pairwise results are saved in the analysis output. These results do not demonstrate equivalence; with six blocks, the comparison has limited power.
+The Friedman test did not reach conventional statistical significance: at the 0.1% target, statistic 4.667 and p=0.0970; at the 1% target, statistic 4.727 and p=0.0941 (six family blocks). No Nemenyi pairwise comparison had p<0.05. The family-level 95% grouped-bootstrap confidence intervals for macro recall are shown in Table I. The six family trials share benign training, calibration, and test partitions within each seed, so the blocks are not fully independent. We treat these tests and intervals as exploratory; they do not demonstrate equivalence among methods.
 
 ### 6.3 Autoencoder exploratory result
 
@@ -100,11 +101,11 @@ The autoencoder’s separately sampled LOFO run reported macro family recall of 
 
 ### 6.4 Replay dashboard demonstration
 
-The dashboard replay demo uses a balanced 7,000-row file with 1,000 rows from each of six attack labels and 1,000 benign rows. On this demonstration sample, recall/FPR were: IF 9.1%/0.2%, PCA 19.6%/1.7%, fusion 15.9%/0.2%, and autoencoder 22.3%/1.3%. This differs from the main experiment because the replay sample is balanced and each model uses its replay bundle’s fixed threshold. The demo is for visualizing outputs, not the primary benchmark or natural traffic prevalence estimate.
+Fig. 1. Recall by held-out family at a 1% CICIDS2017 calibration target. The dashboard replay demo uses a balanced 7,000-row file with 1,000 rows from each of six attack labels and 1,000 benign rows. On this demonstration sample, recall/FPR were: IF 9.1%/0.2%, PCA 19.6%/1.7%, fusion 15.9%/0.2%, and autoencoder 22.3%/1.3%. This differs from the main experiment because the replay sample is balanced and each model uses its replay bundle’s fixed threshold. The demo is for visualizing outputs, not the primary benchmark or natural traffic prevalence estimate.
 
 ### 6.5 Cross-dataset transfer
 
-The table reports the within-CIC reference and UNSW transfer under the same nine-feature representation. FPR targets refer to CIC benign calibration; UNSW FPR is measured on its 37,000 benign test rows. Values are averages over three seeds. UNSW test labels did not affect preprocessing, fitting, or threshold selection.
+The table reports the within-CIC reference and UNSW transfer under the same nine-feature representation. FPR targets refer to CIC benign calibration; UNSW FPR is measured on its 37,000 benign test rows. Values are averages over three seeds. UNSW test labels did not affect preprocessing, fitting, or threshold selection. Family taxonomies differ, so macro recall across the two datasets is descriptive rather than a direct family-matched comparison.
 
 | CIC calibration target | Model | CIC macro family recall | UNSW macro family recall | CIC benign test FPR | UNSW benign test FPR |
 |---:|---|---:|---:|---:|---:|
@@ -119,19 +120,19 @@ The CIC-calibrated thresholds did not preserve their benign alert budgets on UNS
 
 ## 7. Discussion
 
-No detector is uniformly best in this pilot. PCA is strongest by macro recall at the 1% budget, while fusion is strongest at 0.1%, yet all have at least one completely missed family at both operating points. This supports reporting per-family outcomes and false-alarm cost rather than relying on a single ranking metric. Fusion did not establish a statistically significant improvement over its components. It may help at one budget while degrading at another.
+No detector is uniformly best in this pilot. PCA is strongest by macro recall at the 1% budget, while fusion is strongest at 0.1%. Each method has at least one completely or nearly completely missed family at both operating points. This supports reporting per-family outcomes and false-alarm cost rather than relying on a single ranking metric. Fusion did not establish a statistically significant improvement over its components. It may help at one budget while degrading at another.
 
 The dashboard provides practical inspection of flow scores, alert rates, and labeled replay metrics. It loads one locally trained bundle per model or compares all available local bundles. An alert means that a flow score crossed a benign-calibrated threshold; it is not a probability or proof of compromise. The current application performs offline flow replay only and does not capture packets or block traffic.
 
 ## 8. Threats to Validity, Limitations, and Ethics
 
-**Dataset provenance.** The only dataset is a Kaggle-prepared derivative. Its cleaning and license provenance are not independently confirmed. The data are from a simulated/testbed setting and have broad aggregate labels.
+**Dataset provenance.** The primary CICIDS2017 input is a Kaggle-prepared derivative. Its full cleaning pipeline and license were not independently audited. The UNSW-NB15 partitions were obtained from public mirrors; their row counts, label counts, labels, and feature layout match the documented partition profile. Hashes identify the exact mirror files used, but UNSW does not publish file checksums, so the bytes cannot be independently authenticated against its source files. Both datasets represent testbed traffic rather than ordinary production networks, and CIC labels are aggregated into broad families.
 
 **Proxy validity.** Holding out a family simulates category novelty but does not reproduce an actual unknown exploit, changing adversary, or production network. Claims must say “held-out-family zero-day-style proxy.”
 
 **External validity.** The transfer experiment covers one direction (CICIDS2017 to UNSW-NB15) and uses nine approximate shared measurements from different flow-generation tools. Attack-family taxonomies and distributions differ. It does not establish reverse-direction transfer, general cross-dataset performance, or real-world network performance.
 
-**Statistical power.** Only six family-level blocks are available. Repeated seeds are not independent networks. Non-significant tests are not evidence of equal performance.
+**Statistical power.** The main comparison has six family-level blocks, and the blocks reuse benign partitions within each seed. Repeated seeds are not independent networks. The resulting tests have limited power and should be read as exploratory; non-significant tests are not evidence of equal performance.
 
 **Sampled autoencoder.** The autoencoder result is an exploratory capped sample, not part of the full-data main comparison.
 
@@ -139,7 +140,7 @@ The dashboard provides practical inspection of flow scores, alert rates, and lab
 
 ## 9. Conclusion and Future Work
 
-The primary pilot compared Isolation Forest, PCA reconstruction, and rank fusion on six CICIDS2017 held-out aggregate attack families. A separate nine-feature transfer experiment applied CIC-trained and calibrated models to the fixed UNSW-NB15 test partition. CIC-calibrated thresholds produced substantially higher benign FPRs on UNSW, while macro recall also rose. Together, these results show that held-out-family recall can be low at strict alert budgets and that an alert threshold may not transfer across benchmark datasets. These conclusions are limited to the tested methods, datasets, features, and protocol; they do not establish real zero-day detection or general cross-network performance.
+The primary pilot compared Isolation Forest, PCA reconstruction, and rank fusion on six CICIDS2017 held-out aggregate attack families. A separate nine-feature transfer experiment applied CIC-trained and calibrated models to a fixed UNSW-NB15 test-partition mirror. CIC-calibrated thresholds produced substantially higher benign FPRs on UNSW, while macro recall also rose. Together, these results show that held-out-family recall can be low at strict alert budgets and that an alert threshold may not transfer across benchmark datasets. These conclusions are limited to the tested methods, datasets, features, and protocol; they do not establish real zero-day detection or general cross-network performance.
 
 Future work should verify the CIC derivative's provenance and licensing, evaluate reverse UNSW-to-CIC transfer with a defensible feature map, add a supervised known-attack model with an unknown-rejection rule, run a more complete autoencoder experiment if feasible, and build feature-compatible replay/live capture only after validating the flow extractor. Any live alerts should be calibrated on authorized benign network traffic.
 
@@ -169,14 +170,7 @@ Source and protocol: https://github.com/git-sakshii/ZeroDayAttack. The public re
 
 ---
 
-## Submission checklist (remove this section before final submission)
 
-- Fill course/instructor and submission date, and confirm IEEE style and affiliation spelling with the college.
-- Record that Kaggle metadata declares CC0, and retain the Kaggle dataset page and original CICIDS2017 attribution/citation. Ask the instructor if the institution requires additional license review.
-- Confirm the college’s preferred department/affiliation wording.
-- Generate final tables/figures only from saved result files in `results/cicids2017_analysis/` and `results/cross_dataset_unsw/`.
-- Include or regenerate the family recall plot and critical-difference plots if required.
-- Decide whether the autoencoder sampled result belongs in the paper; keep it explicitly secondary/exploratory.
-- Disclose reused code, datasets, and AI assistance according to course rules.
-- Run plagiarism review and proofread after placing this draft in the required template.
-- Do not state the project has live monitoring, general cross-dataset validity, or confirmed real zero-day performance.
+
+
+

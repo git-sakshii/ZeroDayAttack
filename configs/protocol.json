@@ -39,16 +39,16 @@
   },
   "datasets": {
     "primary": "CICIDS2017 Cleaned & Preprocessed (Kaggle dataset by ericanacletoribe; cleaning provenance and licence pending audit)",
-    "cross_dataset": "UNSW-NB15 official fixed test partition; CICIDS2017-to-UNSW-NB15 transfer on a declared 9-feature semantic intersection",
+    "cross_dataset": "UNSW-NB15 fixed test-partition mirror; CICIDS2017-to-UNSW-NB15 transfer on a declared 9-feature semantic intersection",
     "reference": "NSL-KDD optional secondary check"
   },
   "cross_dataset_protocol": {
-    "transfer_direction": "CICIDS2017 benign-only fit and benign calibration to untouched UNSW-NB15 test partition",
+    "transfer_direction": "CICIDS2017 benign-only fit and benign calibration to fixed UNSW-NB15 test-partition mirror",
     "models": ["IsolationForest", "PCAReconstruction", "RankFusion(IF+PCA)"],
     "threshold_source": "CICIDS2017 benign calibration rows only; UNSW labels are evaluation-only",
     "features": ["duration_seconds", "source_packet_count", "source_bytes", "source_mean_packet_bytes", "destination_mean_packet_bytes", "total_flow_bytes_per_second", "destination_packet_count", "source_initial_tcp_window", "destination_initial_tcp_window"],
     "preprocessing_fit": "CICIDS2017 benign training rows only",
-    "target_partition": "UNSW_NB15_testing-set.csv; 82,332 rows; SHA-256 recorded in results/cross_dataset_unsw/cross_dataset_run.json",
+    "target_partition": "UNSW_NB15_testing-set.csv mirror; 82,332 rows; SHA-256 pins local copy in results/cross_dataset_unsw/cross_dataset_run.json",
     "limitations": [
       "Feature definitions are semantically aligned approximations across different flow-generation tools.",
       "This measures one transfer direction and does not establish general cross-network performance.",
@@ -101,3 +101,4 @@
     "Performance on one transfer direction between public testbed datasets does not establish performance on independent real-world networks."
   ]
 }
+

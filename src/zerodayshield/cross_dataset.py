@@ -1,4 +1,4 @@
-"""Cross-dataset transfer from CICIDS2017 to the official UNSW-NB15 test split.
+"""Cross-dataset transfer from CICIDS2017 to a fixed UNSW-NB15 test-partition mirror.
 
 Only a small, explicitly documented set of semantically corresponding flow
 features is used. Preprocessing and alert thresholds are learned from CIC benign
@@ -157,6 +157,8 @@ def run(args: argparse.Namespace) -> dict:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Pin the exact public mirror copies used in this run. These are local
+    # reproducibility hashes, not checksums published by UNSW.
     expected_hashes = {
         "unsw_train": "bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa",
         "unsw_test": "734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559",
@@ -164,7 +166,7 @@ def run(args: argparse.Namespace) -> dict:
     actual_train_hash = sha256_file(unsw_train_path)
     actual_test_hash = sha256_file(unsw_test_path)
     if actual_train_hash != expected_hashes["unsw_train"] or actual_test_hash != expected_hashes["unsw_test"]:
-        raise ValueError("UNSW files do not match the verified official partition checksums")
+        raise ValueError("UNSW files do not match the pinned public mirror copies used by this experiment")
 
     cic_columns = CIC_FEATURES + ["attack_family"]
     cic_raw = pd.read_parquet(cic_path, columns=cic_columns)
@@ -178,9 +180,9 @@ def run(args: argparse.Namespace) -> dict:
     unsw_train = pd.read_csv(unsw_train_path, low_memory=False)
     unsw_test = pd.read_csv(unsw_test_path, low_memory=False)
     if len(unsw_train) != 175_341 or len(unsw_test) != 82_332:
-        raise ValueError("UNSW partition row counts do not match the official UNSW-NB15 release")
+        raise ValueError("UNSW partition row counts do not match the documented UNSW-NB15 partition profile")
     if int((unsw_train["label"] == 0).sum()) != 56_000 or int((unsw_test["label"] == 0).sum()) != 37_000:
-        raise ValueError("UNSW normal-row counts do not match the official partition signatures")
+        raise ValueError("UNSW normal-row counts do not match the expected fixed-partition counts")
 
     unsw_X_df = map_unsw_features(unsw_test)
     unsw_families = normalize_family(unsw_test["attack_cat"]).to_numpy()
@@ -327,8 +329,8 @@ def run(args: argparse.Namespace) -> dict:
     protocol_copy = {
         "protocol_version": "cross-dataset-1.0",
         "source_dataset": "CICIDS2017 Kaggle cleaned/preprocessed derivative supplied by the user",
-        "target_dataset": "UNSW-NB15 official fixed test partition (82,332 rows)",
-        "transfer_direction": "CICIDS2017 benign-only fit and benign calibration -> untouched UNSW-NB15 test partition",
+        "target_dataset": "UNSW-NB15 fixed test partition mirror (82,332 rows)",
+        "transfer_direction": "CICIDS2017 benign-only fit and benign calibration -> fixed UNSW-NB15 test-partition mirror",
         "unsw_training_partition_use": "row-count and normal-count verification only; not used for fitting, preprocessing, calibration, or evaluation",
         "models": ["IsolationForest", "PCAReconstruction", "RankFusion(IF+PCA)"],
         "seeds": seeds,
@@ -348,8 +350,8 @@ def run(args: argparse.Namespace) -> dict:
         "primary_limitations": [
             "Only a 9-feature semantic intersection is used; this is not a same-feature reproduction of the 52-feature primary results.",
             "CICFlowMeter and Argus/Bro feature construction differ; direction and feature semantics are approximate across tools.",
-            "UNSW-NB15 test uses an official fixed partition; transfer results describe this benchmark and one transfer direction only.",
-            "The files were obtained from public mirrors because the official UNSW SharePoint link was inaccessible in this environment; their full SHA-256 values match the published official partition fingerprints.",
+            "UNSW-NB15 test uses the documented fixed partition through a public mirror; transfer results describe this benchmark and one transfer direction only.",
+            "The files were obtained from public mirrors because the official UNSW SharePoint link was inaccessible. Full SHA-256 values pin the exact mirror copies; UNSW does not publish corresponding checksums, so bit-for-bit provider authenticity is not independently established.",
         ],
     }
     (output_dir / "cross_dataset_protocol.json").write_text(json.dumps(protocol_copy, indent=2), encoding="utf-8")
@@ -391,3 +393,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
