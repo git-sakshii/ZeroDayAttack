@@ -47,7 +47,16 @@ Run the current core LOFO models after freezing the schedule:
 
 For a memory-limited exploratory run, append `--sample-per-family 10000`. This takes a deterministic uniform sample per label/family while reading in chunks (or scanning Parquet), and records sampled and observed counts. It changes attack prevalence, so use it for model development and per-family recall comparisons; do not interpret its AUPR/precision as natural-traffic performance. Final runs should use the full data or a predeclared representative sample protocol.
 
-Implemented detectors: Isolation Forest, PCA reconstruction, a small CPU PyTorch autoencoder, and rank-averaged score fusion of Isolation Forest and PCA. The fusion maps scores to percentiles using benign calibration scores and averages the percentiles before thresholding. Install `requirements-ml.txt` before selecting the autoencoder. Supervised rejection, dataset-specific correction, and cross-dataset runs remain future work.
+Implemented detectors: Isolation Forest, PCA reconstruction, a small CPU PyTorch autoencoder, and rank-averaged score fusion of Isolation Forest and PCA. The fusion maps scores to percentiles using benign calibration scores and averages the percentiles before thresholding. Install `requirements-ml.txt` before selecting the autoencoder. The CICIDS2017-to-UNSW-NB15 transfer experiment is implemented in `src/zerodayshield/cross_dataset.py`; it uses nine documented semantically aligned features and calibrates only on CICIDS2017 benign data.
+
+Run the cross-dataset experiment after placing the verified UNSW-NB15 fixed partitions under `data/raw/unsw-nb15/`:
+
+```powershell
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe -m zerodayshield.cross_dataset
+```
+
+The report files are written to `results/cross_dataset_unsw/`. The dataset copies and generated results remain local and are excluded from Git. Read `DATASETS.md` for the source, hashes, feature mapping, and transfer limits.
 
 ## Flow replay and alert dashboard
 

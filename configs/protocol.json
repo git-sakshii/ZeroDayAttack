@@ -10,7 +10,7 @@
   "research_questions": {
     "RQ1": "Which detector has the highest recall on unseen attack families at a fixed false-alarm budget?",
     "RQ2": "Does score fusion improve worst-case family recall?",
-    "RQ3": "How much does each method degrade across datasets?",
+    "RQ3": "How does transfer to UNSW-NB15 shift family recall and the benign false-positive rate when thresholds are calibrated on CICIDS2017?",
     "RQ4": "Is it better to model normal traffic, or known attacks with an unknown-rejection rule?"
   },
   "zero_day_proxy": "Hold out entire attack families from training, tuning, and threshold selection; evaluate them only in the final test split. This is a zero-day-style benchmark proxy and does not establish real zero-day detection.",
@@ -39,8 +39,21 @@
   },
   "datasets": {
     "primary": "CICIDS2017 Cleaned & Preprocessed (Kaggle dataset by ericanacletoribe; cleaning provenance and licence pending audit)",
-    "cross_dataset": "CSE-CIC-IDS2018 or BCCC-CSE-CIC-IDS2018 (pending column compatibility audit)",
+    "cross_dataset": "UNSW-NB15 official fixed test partition; CICIDS2017-to-UNSW-NB15 transfer on a declared 9-feature semantic intersection",
     "reference": "NSL-KDD optional secondary check"
+  },
+  "cross_dataset_protocol": {
+    "transfer_direction": "CICIDS2017 benign-only fit and benign calibration to untouched UNSW-NB15 test partition",
+    "models": ["IsolationForest", "PCAReconstruction", "RankFusion(IF+PCA)"],
+    "threshold_source": "CICIDS2017 benign calibration rows only; UNSW labels are evaluation-only",
+    "features": ["duration_seconds", "source_packet_count", "source_bytes", "source_mean_packet_bytes", "destination_mean_packet_bytes", "total_flow_bytes_per_second", "destination_packet_count", "source_initial_tcp_window", "destination_initial_tcp_window"],
+    "preprocessing_fit": "CICIDS2017 benign training rows only",
+    "target_partition": "UNSW_NB15_testing-set.csv; 82,332 rows; SHA-256 recorded in results/cross_dataset_unsw/cross_dataset_run.json",
+    "limitations": [
+      "Feature definitions are semantically aligned approximations across different flow-generation tools.",
+      "This measures one transfer direction and does not establish general cross-network performance.",
+      "Transfer FPR may differ from the CICIDS2017 calibration budget and must be reported as observed."
+    ]
   },
   "baseline": {
     "models": ["IsolationForest", "PCAReconstruction", "Autoencoder", "RankFusion(IF+PCA)"],
@@ -85,6 +98,6 @@
     "Held-out attack families are a benchmark proxy, not real zero-day attacks.",
     "Public benchmark datasets may be old, simulated, and limited to a single testbed.",
     "An anomaly score is not an attack probability, and an alert is not proof of an attack.",
-    "Performance on one dataset does not establish performance on independent real-world networks."
+    "Performance on one transfer direction between public testbed datasets does not establish performance on independent real-world networks."
   ]
 }

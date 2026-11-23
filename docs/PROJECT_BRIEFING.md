@@ -2,7 +2,7 @@
 
 **Prepared for:** team presentation and instructor questions  
 **Project type:** research prototype for flow-based network anomaly detection  
-**Status:** offline research pipeline and replay dashboard implemented; live capture and cross-dataset validation remain future work.
+**Status:** offline research pipeline and replay dashboard implemented; a CICIDS2017-to-UNSW-NB15 cross-dataset experiment is complete. Live capture remains future work.
 
 ## 1. Project in one minute
 
@@ -28,6 +28,8 @@ The source CSV had 2,520,751 rows, 52 numeric flow features, and the label colum
 
 Because these labels are aggregated, our “family” conclusions are limited to these six broad attack categories. We cannot claim fine-grained attack-type results from this file.
 
+We also evaluated transfer to the fixed UNSW-NB15 test partition: 82,332 rows, including 37,000 benign and 45,332 attacks across nine attack categories. The official row counts and partition fingerprints were checked. The local files are not committed to the public repository; download provenance, full SHA-256 values, and the citation are in `DATASETS.md` and `results/cross_dataset_unsw/cross_dataset_run.json`.
+
 ## 3. How the experiment works
 
 1. **Split benign rows:** Each seed (17, 29, 43) makes a deterministic benign-only train, calibration, and benign-test split. In the current implementation, approximately 60% train, 20% calibration, and 20% benign test.
@@ -37,7 +39,7 @@ Because these labels are aggregated, our “family” conclusions are limited to
 5. **Evaluate LOFO:** For each of six attack families, score that family together with the disjoint benign test rows. Repeat over three seeds. Held-out attack families are not used for fitting, fusion weights, or threshold selection.
 6. **Report:** Recall per family and macro recall, worst-family recall, benign test FPR, AUROC/AUPR, and runtime. The saved metrics—not hand-entered values—are the source for research tables.
 
-All six observed attack categories are listed as final held-out families in `configs/family_schedule.json`; there are no development families in this first fixed-baseline protocol. The family rotation is performed one family at a time. Be clear that the protocol is a single-dataset pilot.
+All six observed attack categories are listed as final held-out families in `configs/family_schedule.json`; there are no development families in this first fixed-baseline protocol. The family rotation is performed one family at a time. This 52-feature LOFO comparison is a single-dataset pilot; the separate nine-feature CIC-to-UNSW transfer experiment is described in Section 5A.
 
 ## 4. Models: what they do and why they are included
 
@@ -61,6 +63,14 @@ Each component’s score is converted to a percentile using benign calibration s
 
 One-Class SVM, Local Outlier Factor, ECOD/COPOD, GMM/Mahalanobis, Kitsune-like ensembles, and a supervised known-attack classifier with an unknown-rejection rule are possible additions. We have not implemented/evaluated those here. Recurrent/Transformer/GNN models were not prioritized because these data are tabular flow summaries without sequence or graph structure in the current setup.
 
+## 4.1 Related research: Shone et al. (2018)
+
+The team found a related IEEE paper: Nathan Shone, Tran Nguyen Ngoc, Vu Dinh Phai, and Qi Shi, “A Deep Learning Approach to Network Intrusion Detection,” *IEEE Transactions on Emerging Topics in Computational Intelligence*, vol. 2, no. 1, pp. 41–53, 2018, DOI: 10.1109/TETCI.2017.2772792. It introduces a non-symmetric deep autoencoder (NDAE) for unsupervised feature learning and combines stacked NDAEs with a Random Forest classifier. Its experiments use KDD Cup ’99 and NSL-KDD, and report classification metrics such as accuracy, precision, recall, F-score, and false-alarm rate.
+
+This is useful background for motivating autoencoder-based network intrusion detection and for discussing the use of older benchmark datasets. It is not a direct baseline for our main results: the paper evaluates labeled multi-class classification on KDD Cup ’99 and NSL-KDD, whereas our primary question evaluates benign-only anomaly detectors on whole attack families held out from fitting and threshold calibration in a CICIDS2017 derivative. Its reported results belong to its authors and must not be presented as ZeroDayShield results. The authors explicitly list assessing the model’s zero-day capability as future work, so it does not provide evidence that their method detects unseen attack families under our protocol.
+
+**IEEE reference:** N. Shone, T. N. Ngoc, V. D. Phai, and Q. Shi, “A deep learning approach to network intrusion detection,” *IEEE Transactions on Emerging Topics in Computational Intelligence*, vol. 2, no. 1, pp. 41–53, Feb. 2018, doi: 10.1109/TETCI.2017.2772792.
+
 ## 5. Main full-data LOFO findings
 
 The following is the saved full-data comparison for Isolation Forest, PCA, and fusion. Values are mean macro recall across the six held-out family trials, with seeds averaged within family trials.
@@ -74,6 +84,23 @@ The following is the saved full-data comparison for Isolation Forest, PCA, and f
 Mean observed benign-test FPRs were close to targets: about 0.09–0.10% at the 0.1% budget, and 0.99–1.01% at the 1% budget. PCA had the highest macro recall at 1%; fusion had the highest at 0.1%. Every method missed at least one held-out family completely at each budget. Friedman comparisons across six family blocks did not show a statistically significant difference (p=0.097 at 0.1%, p=0.094 at 1%). This is insufficient evidence to distinguish methods, not proof they are equivalent.
 
 The autoencoder LOFO run is separate and **exploratory**: it capped the sample at 50,000 rows per family due to CPU runtime. Macro recall was 3.4% at the 0.1% target budget and 21.5% at 1%, with worst-family recall of 0% and 0.03%, respectively. Its sample prevalence differs from the full dataset, so its AUPR/precision should not be compared directly to full-data metrics.
+
+## 5A. Cross-dataset experiment: CICIDS2017 to UNSW-NB15
+
+We reran Isolation Forest, PCA, and rank fusion on a nine-feature semantic intersection, allowing a within-CIC reference and a CIC-to-UNSW transfer comparison in the same input space. The features cover duration, directional packet/byte measurements, mean packet lengths, flow byte rate, and TCP initial window sizes. CIC duration was converted from microseconds to seconds; CIC backward packet count and UNSW total flow byte rate were derived using the documented formulas. Argus/Bro and CICFlowMeter compute flow features differently, so this mapping remains approximate.
+
+The models and preprocessors were fit using CIC benign training rows only. Thresholds were calibrated on CIC benign calibration rows only, then frozen for scoring the entire official UNSW-NB15 test partition. UNSW labels were evaluation-only. Values below average three seeds; these repeat the same public benchmark and do not represent independent network captures. “Target FPR” means the CIC calibration target. The final column is the measured benign FPR on UNSW, which can shift.
+
+| CIC calibration target | Model | CIC macro family recall | UNSW macro family recall | CIC benign test FPR | UNSW benign test FPR |
+|---:|---|---:|---:|---:|---:|
+| 0.1% | Isolation Forest | 0.10% | 0.28% | 0.095% | 0.197% |
+| 0.1% | PCA reconstruction | 0.64% | 1.31% | 0.097% | 1.185% |
+| 0.1% | IF + PCA rank fusion | 0.72% | 0.78% | 0.099% | 0.992% |
+| 1.0% | Isolation Forest | 1.06% | 2.10% | 0.988% | 5.903% |
+| 1.0% | PCA reconstruction | 1.32% | 3.35% | 0.997% | 6.331% |
+| 1.0% | IF + PCA rank fusion | 1.06% | 3.04% | 0.984% | 7.560% |
+
+The external UNSW FPR rose above the CIC calibration target for every method and budget. The higher UNSW macro recall therefore does not mean transfer improved detection at a controlled false-alarm cost: the frozen thresholds also flagged more benign UNSW flows. Worst-family recall was zero for each method in both datasets. Treat this as a descriptive result for one transfer direction; attack-family definitions differ between datasets, and this nine-feature run is separate from the 52-feature primary experiment.
 
 ### Important demo comparison distinction
 
@@ -148,7 +175,7 @@ The public repo contains source, protocol/configuration, and documentation. It d
 
 **Built:** data preparation/audit code, Isolation Forest/PCA/autoencoder/fusion detectors, fixed-protocol LOFO runner, result analysis, replay train-and-score CLI, four local replay bundles, and a Streamlit dashboard with single-model scoring and side-by-side local-model comparison.
 
-**Not yet built/finished:** live packet capture and compatible live flow-feature extraction; supervised classifier with an unknown-rejection rule; cross-dataset validation; full-data autoencoder LOFO; independent external validation; production hardening. The dashboard currently replays saved flow records and should not be described as live monitoring.
+**Not yet built/finished:** live packet capture and compatible live flow-feature extraction; supervised classifier with an unknown-rejection rule; reverse UNSW-to-CIC transfer; full-data autoencoder LOFO; independent real-network validation; production hardening. The dashboard currently replays saved flow records and should not be described as live monitoring.
 
 ## 10. Likely instructor questions and short answers
 
@@ -176,8 +203,11 @@ A: That is a small, intentionally balanced demonstration file, not the fixed-FPR
 **Q: Did the models use attack labels for training?**  
 A: The unsupervised anomaly models were fit on benign training rows. Labels were used to create held-out-family evaluation groups and calculate evaluation metrics, not to fit or calibrate the detectors.
 
+**Q: What did the cross-dataset experiment show?**
+A: We trained and calibrated on CIC benign traffic, then froze the pipeline for the official UNSW-NB15 test partition using nine mapped features. CIC-calibrated thresholds did not preserve their FPR on UNSW: observed benign FPR reached about 5.9–7.6% at the 1% calibration target. The feature mapping and datasets are imperfect testbed proxies, so this is a limited transfer result.
+
 **Q: What is the main weakness today?**  
-A: Generalization is weak for some held-out families at low false-positive budgets; dataset provenance is not fully verified; and live capture/cross-dataset evaluation are not done yet.
+A: Generalization is weak for some held-out families at low false-positive budgets; transfer causes substantial false-alarm drift; and live capture is not implemented.
 
 **Q: Is it ready to block attacks?**  
 A: No. It is a research prototype that flags anomalous flows for review. It does not block traffic and has not been validated as a production security control.
@@ -191,7 +221,7 @@ A: No. It is a research prototype that flags anomalous flows for review. It does
 5. Main LOFO table at 0.1% and 1% FPR.
 6. Explain the statistical result and zero worst-family recall.
 7. Demonstrate dashboard comparison using the balanced replay CSV; label it as a demo.
-8. Limitations and next steps: verify dataset provenance, cross-dataset test, supervised rejection reference, and feature-compatible live capture.
+8. Cross-dataset transfer result, then limitations and next steps: reverse-direction transfer, supervised rejection reference, and feature-compatible live capture.
 
 ## 12. Source-of-truth files for reported numbers
 
@@ -199,6 +229,8 @@ A: No. It is a research prototype that flags anomalous flows for review. It does
 - Full-data summary: `results/cicids2017_analysis/summary.md`
 - Autoencoder exploratory summary: `results/cicids2017_autoencoder_sampled/analysis/summary.md`
 - Balanced dashboard replay comparison: `results/replay/balanced_model_comparison.csv`
+- Cross-dataset family metrics, means, and summary: `results/cross_dataset_unsw/cross_dataset_family_metrics.csv`, `cross_dataset_family_means.csv`, and `cross_dataset_summary.csv`
+- Cross-dataset input hashes and run metadata: `results/cross_dataset_unsw/cross_dataset_run.json`
 - Dataset audit: `data/processed/cicids2017_cleaned.audit.json`
 - Run metadata and checksums: `results/cicids2017_core/run.json`
 
