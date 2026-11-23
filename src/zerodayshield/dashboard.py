@@ -40,6 +40,17 @@ if (model_file or selected_model != "Upload a model") and flow_file:
         m2.metric("Alerts", f"{len(alerts):,}")
         m3.metric("Flows scored", f"{len(scored):,}")
         st.caption(f"Alert rate: {100 * len(alerts) / max(1, len(scored)):.2f}% · Calibration target: {bundle['target_fpr']:.1%} FPR")
+        if "Label" in scored:
+            known_attack = scored["Label"].astype(str).str.casefold() != "benign"
+            benign_rows = ~known_attack
+            attack_recall = float(scored.loc[known_attack, "alert"].mean()) if known_attack.any() else float("nan")
+            benign_fpr = float(scored.loc[benign_rows, "alert"].mean()) if benign_rows.any() else float("nan")
+            st.subheader("Replay check against supplied labels")
+            st.caption("Labels are only used here to summarize this labeled replay file; the detector did not use them to create its alerts.")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Labeled attack flows", f"{int(known_attack.sum()):,}")
+            c2.metric("Attack recall in this file", f"{attack_recall:.1%}" if known_attack.any() else "N/A")
+            c3.metric("Benign false-positive rate", f"{benign_fpr:.2%}" if benign_rows.any() else "N/A")
         if "attack_family" in scored:
             st.subheader("Recall by supplied family (offline labeled replay only)")
             st.dataframe(scored.groupby("attack_family").alert.mean().rename("alert_rate").sort_values(ascending=False), use_container_width=True)
