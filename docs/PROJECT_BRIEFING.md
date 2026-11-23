@@ -2,13 +2,23 @@
 
 **Prepared for:** team presentation and instructor questions  
 **Project type:** research prototype for flow-based network anomaly detection  
-**Status:** offline research pipeline and replay dashboard implemented; a CICIDS2017-to-UNSW-NB15 cross-dataset experiment is complete. Live capture remains future work.
+**Status:** offline research pipeline and replay dashboard implemented; a CICIDS2017-to-UNSW-NB15 transfer experiment is complete. Live capture remains future work.
 
 ## 1. Project in one minute
 
 ZeroDayShield compares detectors trained on benign network-flow records. The research question is whether a detector can flag traffic from an attack family it did not see during training, and how many benign records it flags along the way. We approximate a “new” attack by holding out one complete labeled attack family for testing. This is a zero-day-style benchmark proxy, not a real zero-day test.
 
 We implemented Isolation Forest, PCA reconstruction error, a small autoencoder, and equal-weight rank fusion of Isolation Forest and PCA. We calibrated thresholds using a separate benign calibration split, then evaluated attack recall and benign false-positive rate. We also built an offline Streamlit dashboard that scores uploaded flow records. It does not capture live packets yet.
+
+### The most important idea: what “zero-day” means here
+
+Your original idea is a **benign-only anomaly detector**: learn patterns from normal network traffic, then flag records that look sufficiently different. The IF, PCA, and autoencoder detectors follow that idea. They do not need examples of every kind of attack in order to produce an unusualness score.
+
+The hard part is proving that they catch something genuinely new. A public dataset cannot contain an unknown future exploit that has never existed or been recorded. So our experiment uses a limited proxy: take a known attack family in CICIDS2017, hide every row from that family during fitting and threshold selection, then ask whether the frozen detector flags those rows. The family is known to the researchers because its labels are needed to evaluate recall, but it is withheld from the detector. This tests generalization to a withheld category. It does **not** prove detection of arbitrary novel behavior, a real zero-day exploit, or every attack that differs from normal traffic.
+
+Think of the workflow as: **learn normal → choose a cautious cutoff using separate normal examples → freeze the system → show it a withheld family and normal test records → count detected attacks and wrongly flagged normal records.** The model produces an anomaly score; the threshold turns that score into an alert. The alert means “unusual; review it,” not “confirmed malicious.”
+
+For the CIC-to-UNSW experiment, there is an additional question: if we train and set the cutoff on one dataset, does the cutoff behave similarly on a second dataset? It often did not. The test checks portability and alert drift, not whether UNSW is a real zero-day set.
 
 ## 2. Dataset and preparation
 
@@ -28,7 +38,7 @@ The source CSV had 2,520,751 rows, 52 numeric flow features, and the label colum
 
 Because these labels are aggregated, our “family” conclusions are limited to these six broad attack categories. We cannot claim fine-grained attack-type results from this file.
 
-We also evaluated transfer to the fixed UNSW-NB15 test partition: 82,332 rows, including 37,000 benign and 45,332 attacks across nine attack categories. The row counts, normal/attack counts, labels, and feature layout were checked against the documented partition profile. SHA-256 hashes pin the exact mirror copies; UNSW does not publish checksums, so the copies are not independently authenticated byte-for-byte against provider files. The local files are not committed to the public repository; download provenance, full SHA-256 values, and the citation are in `DATASETS.md` and `results/cross_dataset_unsw/cross_dataset_run.json`.
+We also evaluated transfer to a public mirror copy of the UNSW-NB15 fixed test partition: 82,332 rows, including 37,000 benign and 45,332 attacks across nine attack categories. The row counts, normal/attack counts, labels, and feature layout were checked against the documented partition profile. SHA-256 hashes pin the exact mirror copies; UNSW does not publish checksums, so the copies are not independently authenticated byte-for-byte against provider files. The local files are not committed to the public repository; download provenance, full SHA-256 values, and the citation are in `DATASETS.md` and `results/cross_dataset_unsw/cross_dataset_run.json`.
 
 ## 3. How the experiment works
 
@@ -202,6 +212,57 @@ A: That is a small, intentionally balanced demonstration file, not the fixed-FPR
 
 **Q: Did the models use attack labels for training?**  
 A: The unsupervised anomaly models were fit on benign training rows. Labels were used to create held-out-family evaluation groups and calculate evaluation metrics, not to fit or calibrate the detectors.
+
+**Q: If the attack family was never used for training, how did you test detection?**  
+A: The model did not see that family during fitting or threshold calibration. After freezing the model and threshold, we used the family labels only to check which flows were detected and calculate recall. This tests generalization to a known benchmark category withheld from the model; it is not a real newly discovered exploit.
+
+**Q: Does “unseen” mean we hid all examples of a real exploit from an actual network?**  
+A: No. We held out all examples of one labeled family in this dataset. That is a controlled proxy for category novelty; we do not have a true zero-day sample.
+
+**Q: What exactly did we train?**  
+A: The primary IF, PCA, and fusion detectors learned from benign CICIDS2017 flow records. We split benign rows into training, calibration, and benign test portions. The autoencoder also learned from benign data, but its LOFO result used a capped sample and is exploratory. In the separate transfer experiment, IF, PCA, and fusion were trained on benign CIC data using a nine-feature mapping before being tested on the UNSW mirror partition.
+
+**Q: When I say “we train on unseen data,” is that right?**  
+A: Say instead: “We train the detectors on benign data. During evaluation, we withhold an entire labeled attack family from fitting and cutoff selection, then test whether the frozen detectors flag it.” The attack family is unseen by the model, not unknown to the dataset or research team.
+
+**Q: Is the project doing my original idea?**  
+A: Partly. The benign-only detectors learn a normal-traffic baseline and flag departures, which is the core idea. The held-out-family test checks whether they generalize beyond attack families used by the model. It is still an offline benchmark experiment: it does not prove detection of arbitrary zero-day attacks, and the dashboard currently scores saved flow records instead of capturing live traffic.
+
+**Q: Why might a real new attack still be missed?**  
+A: An attack can resemble normal traffic in the features we measure. A detector can only flag deviations that its features and learned boundary make visible. Stealthy attacks may look normal in flow summaries, and benign traffic that changes may look anomalous. We observed very low or zero recall for some held-out families, which is exactly why we avoid claiming universal zero-day detection.
+
+**Q: Why use attack labels at all if training is benign-only?**  
+A: Labels let us set aside whole families for the benchmark and later count true detections and misses. They do not teach the unsupervised detector what an attack looks like.
+
+**Q: What is the main answer to our research question?**  
+A: There is no universal winner in this experiment. PCA had the highest macro recall at the 1% target, 19.2%; rank fusion led at the 0.1% target, 7.4%. But some family recall was zero or nearly zero for every model and budget, and method differences were not statistically significant across six family blocks. We can say “best among those tested under this protocol,” not “best zero-day detector.”
+
+**Q: What does “the threshold transfers poorly” mean?**  
+A: We chose thresholds using benign CIC calibration records, froze them, and applied them to the UNSW test mirror. On UNSW, benign FPR rose as high as about 7.56% when the CIC calibration target was 1%. This means more benign flows were flagged in the target dataset; a percentage calibrated on one dataset is not guaranteed on another.
+
+**Q: What does the dashboard actually do?**  
+A: It loads a previously trained local model bundle and a CSV/Parquet of flow records, calculates each record’s score, and flags records whose scores cross the stored cutoff. In comparison mode it scores the same uploaded file with available local models. The balanced replay CSV is only a demonstration. The dashboard does not capture live packets, prove an attack, or block traffic.
+
+**Q: Is “alert rate” the same as false-positive rate?**  
+A: No. Alert rate is all flagged rows divided by all rows. FPR is flagged benign rows divided by all benign rows. Recall is flagged attack rows divided by all attack rows. They have different denominators.
+
+**Q: Why is high recall alone not enough?**  
+A: A detector could obtain high recall by flagging nearly every record. FPR measures that benign alert cost. We compare recall at calibration targets of 0.1% and 1%, then report the measured benign test FPR as well.
+
+**Q: Are model scores probabilities?**  
+A: No. IF path-based scores, PCA reconstruction errors, and autoencoder reconstruction errors are different measures of unusualness. We threshold them; we do not interpret them as attack probabilities.
+
+**Q: Why does the autoencoder have a high replay recall but not lead the main results?**  
+A: Replay used a balanced, capped demonstration sample and each bundle had a fixed threshold. The autoencoder alerted more benign records there. Its separate capped LOFO experiment is exploratory and is not a like-for-like full-data comparison. We should not choose a winner from that replay result.
+
+**Q: Are the result differences statistically proven?**  
+A: No. Friedman p-values were about 0.097 and 0.094, with six family blocks, and no Nemenyi pairwise result was significant. Those family trials reuse benign partitions and have limited independence and statistical power, so the results are exploratory; “not significant” does not prove models are equivalent.
+
+**Q: What was checked about the datasets?**  
+A: For CIC, we inspected rows, labels, features, duplicates, and conflicting feature-identical labels, but we did not independently recreate the Kaggle publisher’s full cleaning process or audit the license. For UNSW, documented partition counts and labels were checked and SHA-256 hashes pin the exact mirror copies we used. UNSW does not publish those hashes, so we cannot claim the files were authenticated byte-for-byte against the provider’s originals.
+
+**Q: What is missing before this becomes a stronger system?**  
+A: A fuller evaluation with a supervised known-attack plus unknown-rejection reference, reverse UNSW-to-CIC transfer, stronger independent network validation, and a verified live flow extractor/capture path. Live capture should only be attempted on a network we own or are authorized to monitor. The current demo is offline replay.
 
 **Q: What did the cross-dataset experiment show?**
 A: We trained and calibrated on CIC benign traffic, then froze the pipeline for the fixed UNSW-NB15 test-partition mirror using nine mapped features. CIC-calibrated thresholds did not preserve their FPR on UNSW: observed benign FPR reached about 5.9–7.6% at the 1% calibration target. The feature mapping and datasets are imperfect testbed proxies, so this is a limited transfer result.
