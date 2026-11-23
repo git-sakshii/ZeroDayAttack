@@ -1,6 +1,6 @@
 # Evaluating Benign-Only Anomaly Detectors on Held-Out Network Attack Families
 
-**Sakshi Singh, Rushil Chaudhary, Zoya Parveen, Yashshvi Sharma**  
+**Sakshi Singh, Rushil Chaudhary, Zoya Parveen, Yashsvi Sharma**  
 Department of Computer Science and Engineering (Artificial Intelligence), Galgotias College of Engineering & Technology, Greater Noida, India  
 **Course / instructor:** [fill in]  
 **Citation style:** IEEE (assumed; confirm with instructor)
