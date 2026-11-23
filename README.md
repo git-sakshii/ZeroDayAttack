@@ -5,15 +5,15 @@ Reproducible research project for evaluating network anomaly detectors on held-o
 ## Quick start
 
 1. Create a Python 3.11 environment and install `requirements.txt`.
-2. Place a prepared flow CSV under `data/raw/` (see `configs/protocol.json` for required label and feature-column settings).
-3. Run `python -m zerodayshield.cli --input data/raw/flows.csv --label-column Label --output-dir results/smoke`.
+2. Put a flow CSV under `data/raw/` and prepare it using the converter below.
+3. Use `zerodayshield.experiment` for the frozen-family LOFO protocol; the older `zerodayshield.cli` command is a one-family smoke baseline.
 
-The CLI trains Isolation Forest on benign training rows only, calibrates its threshold from benign calibration rows at the configured false-positive budget, and reports recall and false-positive rate on disjoint benign and held-out-family test rows. Preprocessing is fitted on training rows only. This starter does not download or claim results for any dataset; dataset cleaning, family mapping, and a fixed LOFO family schedule must be documented before a full experiment.
+The experiments train anomaly detectors on benign training rows only, calibrate thresholds on separate benign calibration rows, and report recall alongside false-positive rate. Preprocessing is fitted on training rows only. Dataset cleaning, family mapping, and a fixed LOFO family schedule must be audited before final claims.
 
 ## Layout
 
 - `configs/protocol.json`: versioned experiment protocol and split rules.
-- `configs/family_schedule.json`: template for the predeclared attack-family schedule.
+- `configs/family_schedule.json`: frozen schedule for the current local CICIDS2017-derived dataset; a new dataset needs its own reviewed schedule and checksum.
 - `DATASETS.md`: primary dataset choice, citations, and audit checklist.
 - `src/zerodayshield/`: preprocessing, split logic, detector API, baseline, and CLI.
 - `data/`: local inputs and processed data (not committed).
@@ -27,7 +27,7 @@ For CSV inputs, provide a label column and optionally a family column. If no fam
 - Paper venue and dashboard framework: TBD.
 - Hardware target: Windows, 16 GB RAM, integrated Radeon graphics; prioritize CPU-friendly models and small smoke runs.
 
-The current CLI reads a CSV into memory. Use `--max-rows` only for smoke checks; do not use a row-capped run as final research evidence. A CICFlowMeter dataset adapter and predeclared family split manifest are required before full experiments. For a target FPR budget `b`, at least `ceil(1/b)` benign calibration rows are required, and the run records the empirical calibration alert rate and tie rule. Test FPR can differ from calibration FPR because both are finite samples.
+The one-family CLI reads CSV into memory. The LOFO runner supports Parquet and optional deterministic per-family sampling. Sampling is exploratory unless a representative sample protocol is declared in advance. For target FPR budget `b`, at least `ceil(1/b)` benign calibration rows are required. Test FPR can differ from calibration FPR because both are finite samples.
 
 ## Dataset preparation and LOFO
 
