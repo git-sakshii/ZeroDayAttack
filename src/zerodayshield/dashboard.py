@@ -23,8 +23,47 @@ local_models = {
 }
 available_models = [name for name, path in local_models.items() if path.exists()]
 selected_model = st.sidebar.selectbox("Or select a locally trained model", ["Upload a model"] + available_models)
+compare_all = st.sidebar.checkbox("Compare all available local models")
 flow_file = st.sidebar.file_uploader("Flow records (.csv or .parquet)", type=["csv", "parquet"])
-if (model_file or selected_model != "Upload a model") and flow_file:
+if compare_all and flow_file:
+    try:
+        if flow_file.name.lower().endswith(".parquet"):
+            frame = pd.read_parquet(flow_file)
+        else:
+            frame = pd.read_csv(flow_file, low_memory=False)
+        rows = []
+        scored_by_model = {}
+        for model_name, model_path in local_models.items():
+            if not model_path.exists():
+                continue
+            bundle = joblib.load(model_path)
+            scored = score_frame(frame, bundle)
+            scored_by_model[model_name] = scored
+            alerts = scored["alert"].astype(bool)
+            if "Label" in frame:
+                attack_rows = frame["Label"].astype(str).str.casefold() != "benign"
+                benign_rows = ~attack_rows
+                attack_recall = float(alerts[attack_rows].mean()) if attack_rows.any() else float("nan")
+                benign_fpr = float(alerts[benign_rows].mean()) if benign_rows.any() else float("nan")
+            else:
+                attack_recall = benign_fpr = float("nan")
+            rows.append({"Model": model_name, "Alerts": int(alerts.sum()),
+                         "Alert rate": float(alerts.mean()), "Attack recall": attack_recall,
+                         "Benign FPR": benign_fpr})
+        comparison = pd.DataFrame(rows)
+        st.subheader("Model comparison on this replay file")
+        if "Label" not in frame:
+            st.info("This file has no labels, so attack recall and benign FPR cannot be calculated.")
+        else:
+            st.caption("Labels are used only to calculate these summary metrics after scoring. A balanced sample changes attack prevalence; treat results as exploratory.")
+        st.dataframe(comparison.style.format({"Alert rate": "{:.2%}", "Attack recall": "{:.2%}", "Benign FPR": "{:.2%}"}), use_container_width=True)
+        chart_columns = [c for c in ["Attack recall", "Benign FPR"] if c in comparison]
+        if chart_columns:
+            st.bar_chart(comparison.set_index("Model")[chart_columns])
+        st.download_button("Download comparison CSV", comparison.to_csv(index=False), "model_comparison.csv", "text/csv")
+    except Exception as exc:
+        st.error(f"Could not compare models: {exc}")
+elif (model_file or selected_model != "Upload a model") and flow_file:
     try:
         bundle = joblib.load(model_file if model_file else local_models[selected_model])
         if flow_file.name.lower().endswith(".parquet"):
@@ -64,4 +103,4 @@ if (model_file or selected_model != "Upload a model") and flow_file:
         st.error(f"Could not score this file: {exc}")
 else:
     st.info("Upload a trained model bundle and a flow CSV/Parquet with the same feature columns used during training.")
-    st.code("python -m zerodayshield.replay train --input data/processed/cicids2017_cleaned.parquet --output models/replay.joblib\npython -m streamlit run -m zerodayshield.dashboard", language="powershell")
+    st.code("python -m zerodayshield.replay train --input data/processed/cicids2017_cleaned.parquet --output models/replay.joblib\npython -m streamlit run src/zerodayshield/dashboard.py", language="powershell")
