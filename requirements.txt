@@ -1,0 +1,13 @@
+numpy>=1.26,<2.3
+pandas>=2.2,<3
+scikit-learn>=1.5,<1.8
+pyarrow>=17,<25
+polars-lts-cpu>=1.30,<2
+matplotlib>=3.9,<4
+scikit-posthocs>=0.11,<1
+
+# Optional paper analysis and later model tiers:
+# scipy>=1.13
+# matplotlib>=3.9
+# torch>=2.4
+# pyod>=2.0

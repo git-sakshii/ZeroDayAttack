@@ -1,0 +1,25 @@
+{
+  "schedule_version": "0.2.0",
+  "status": "frozen",
+  "dataset": "CICIDS2017 Cleaned & Preprocessed (Kaggle: ericanacletoribe)",
+  "source_checksum_sha256": "34c6c45d067bbbfa9d8fc91b40fc6606801c8e103896db08710adff4c41a2be7",
+  "label_mapping_reference": "data/processed/cicids2017_cleaned.audit.json; raw labels retained in label_raw",
+  "families": [
+    "bots",
+    "brute_force",
+    "ddos",
+    "dos",
+    "port_scanning",
+    "web_attacks"
+  ],
+  "development_families": [],
+  "final_test_families": [
+    "bots",
+    "brute_force",
+    "ddos",
+    "dos",
+    "port_scanning",
+    "web_attacks"
+  ],
+  "selection_rule": "All six non-benign labels observed in the prepared input are held out and evaluated one at a time. No attack-family tuning is performed in this first fixed-baseline comparison. Detector settings and equal-weight IF+PCA fusion are fixed in protocol v0.2.0 before running models. Labels are aggregated family categories in the Kaggle derivative, not original fine-grained attack types."
+}

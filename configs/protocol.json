@@ -1,0 +1,90 @@
+{
+  "protocol_version": "0.2.0",
+  "project": "ZeroDayShield v2",
+  "planning": {
+    "working_deadline": "2026-11-10",
+    "paper_venue": "TBD",
+    "dashboard_framework": "TBD",
+    "capture_demo_operating_system": "TBD"
+  },
+  "research_questions": {
+    "RQ1": "Which detector has the highest recall on unseen attack families at a fixed false-alarm budget?",
+    "RQ2": "Does score fusion improve worst-case family recall?",
+    "RQ3": "How much does each method degrade across datasets?",
+    "RQ4": "Is it better to model normal traffic, or known attacks with an unknown-rejection rule?"
+  },
+  "zero_day_proxy": "Hold out entire attack families from training, tuning, and threshold selection; evaluate them only in the final test split. This is a zero-day-style benchmark proxy and does not establish real zero-day detection.",
+  "splitting": {
+    "strategy": "leave_one_attack_family_out",
+    "train_data": "benign_only",
+    "tuning_families": "development_families_only",
+    "test_families": "predeclared_held_out_families_never_used_for_tuning_or_threshold_selection",
+    "family_schedule_file": "configs/family_schedule.json",
+    "schedule_must_be_frozen_before_final_runs": true,
+    "split_before_preprocessing": true,
+    "fit_preprocessing_on_training_only": true,
+    "seeds": [17, 29, 43],
+    "duplicate_policy": "remove_exact_duplicates; quarantine_conflicting_labels_for_manual_audit"
+  },
+  "tuning": {
+    "attack_family_tuning": "none_for_first_fixed_baseline_comparison",
+    "model_settings": "fixed a priori; no attack-family labels are used for fitting, feature preprocessing, fusion weighting, or threshold selection",
+    "held_out_families": "all six observed non-benign families are evaluated one at a time"
+  },
+  "thresholding": {
+    "calibration_data": "benign_calibration_rows_only",
+    "test_labels_used_for_threshold": false,
+    "false_positive_rate_budgets": [0.01, 0.001],
+    "quantile_rule": "threshold at empirical benign calibration score quantile 1 - target_fpr; score >= threshold is anomalous"
+  },
+  "datasets": {
+    "primary": "CICIDS2017 Cleaned & Preprocessed (Kaggle dataset by ericanacletoribe; cleaning provenance and licence pending audit)",
+    "cross_dataset": "CSE-CIC-IDS2018 or BCCC-CSE-CIC-IDS2018 (pending column compatibility audit)",
+    "reference": "NSL-KDD optional secondary check"
+  },
+  "baseline": {
+    "models": ["IsolationForest", "PCAReconstruction", "Autoencoder", "RankFusion(IF+PCA)"],
+    "model": "IsolationForest",
+    "contamination": "auto",
+    "n_estimators": 150,
+    "max_samples": "auto",
+    "threshold_selection": "benign_calibration_empirical_quantile"
+  },
+  "fixed_model_settings": {
+    "IsolationForest": {"n_estimators": 150, "max_samples": "auto"},
+    "PCAReconstruction": {"n_components": 0.95, "solver": "full"},
+    "Autoencoder": {"hidden_dim": 32, "bottleneck_dim": 8, "epochs": 30, "batch_size": 512, "learning_rate": 0.001},
+    "RankFusion": {"components": ["IsolationForest", "PCAReconstruction"], "score_map": "benign calibration empirical percentile", "weighting": "equal arithmetic mean"}
+  },
+  "metrics": [
+    "per_family_recall_at_fixed_fpr",
+    "worst_case_family_recall",
+    "macro_recall",
+    "false_positive_rate",
+    "auroc",
+    "aupr",
+    "fit_seconds",
+    "score_latency_ms_per_row",
+    "peak_memory_mb"
+  ],
+  "statistics": {
+    "trial_unit": "dataset_by_held_out_family",
+    "test": "Friedman",
+    "post_hoc": "Nemenyi",
+    "confidence_intervals": "group_bootstrap_by_dataset_and_held_out_family",
+    "repeated_seeds_are_not_independent_networks": true
+  },
+  "reproducibility": {
+    "save_protocol_copy": true,
+    "save_seeds": true,
+    "save_input_checksum_sha256": true,
+    "save_preprocessor_and_model_config": true,
+    "save_results_as": ["CSV", "JSON"]
+  },
+  "limitations": [
+    "Held-out attack families are a benchmark proxy, not real zero-day attacks.",
+    "Public benchmark datasets may be old, simulated, and limited to a single testbed.",
+    "An anomaly score is not an attack probability, and an alert is not proof of an attack.",
+    "Performance on one dataset does not establish performance on independent real-world networks."
+  ]
+}
