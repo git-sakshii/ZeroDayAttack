@@ -1,8 +1,9 @@
 # Evaluating Benign-Only Anomaly Detectors on Held-Out Network Attack Families
 
-**Author names and affiliations:** [add all four team members and college]  
+**Sakshi Singh, Rushil Chaudhary, Zoya Parveen, Yashshvi Sharma**  
+Department of Computer Science and Engineering (Artificial Intelligence), Galgotias College of Engineering & Technology, Greater Noida, India  
 **Course / instructor:** [fill in]  
-**Submission format and citation style:** [confirm instructor requirements]
+**Citation style:** IEEE (assumed; confirm with instructor)
 
 ## Abstract
 
@@ -12,7 +13,7 @@ Network intrusion detectors are often evaluated on attack classes represented du
 
 ## 1. Introduction
 
-Network intrusion detection systems increasingly use machine learning to identify suspicious activity in flow records. A central difficulty is generalization: a model may perform well on attacks similar to its training examples yet fail when it encounters a different attack family. In operational settings, false alarms also matter. A detector that flags many benign flows may overwhelm analysts even if it catches a portion of attacks.
+Network intrusion detection systems increasingly use machine learning to identify suspicious activity in flow records. A central difficulty is generalization: a model may perform well on attacks similar to its training examples yet fail when it encounters a different attack family. In operational settings, false alarms also matter. A detector that flags many benign flows may overwhelm analysts even if it catches a portion of attacks [1].
 
 This work asks: **Among the tested benign-only anomaly detectors, which achieves the strongest recall on attack families excluded from model fitting at a fixed benign false-alarm budget?** We use whole-family holdout as a reproducible zero-day-style proxy. A real zero-day is not present in the benchmark; therefore this paper does not claim real zero-day detection.
 
@@ -20,11 +21,9 @@ We compare Isolation Forest, PCA reconstruction error, and equal-weight rank fus
 
 ## 2. Related Work
 
-Isolation Forest identifies unusual observations through random recursive partitioning [CITATION]. PCA-based anomaly detection uses reconstruction residuals or subspace deviations to identify observations that do not fit a learned low-dimensional normal pattern [CITATION]. Autoencoder approaches use neural reconstruction error and have been explored in network anomaly detection, including Kitsune [CITATION]. Score fusion can combine complementary rankings but may not improve every family or operating point.
+Isolation Forest identifies unusual observations through random recursive partitioning [2]. PCA-based network anomaly detection uses residuals or subspace deviations to find observations that do not fit a learned low-dimensional normal pattern; prior work also highlights its sensitivity to modeling choices [3]. Autoencoder approaches use neural reconstruction error and have been explored in network anomaly detection, including Kitsune [4]. Score fusion can combine complementary rankings but may not improve every family or operating point.
 
-Security ML evaluation requires careful control of leakage, realistic splits, and operational metrics. Arp et al. discuss common methodological pitfalls in machine-learning security research [CITATION]. LOFO evaluation complements random row splits by withholding attack categories, but it remains a dataset proxy and not evidence of performance on real unseen intrusions. Prior IDS research has also documented concerns about benchmark dataset construction and generalization [CITATION].
-
-**Author action:** replace each `[CITATION]` with a checked reference and bibliography entry. Verify exact source details and cite the dataset author page, paper, and license/provenance statement before submission. Do not invent citations.
+Security ML evaluation requires careful control of leakage, realistic splits, and operational metrics. Arp et al. discuss common methodological pitfalls in machine-learning security research [1]. LOFO evaluation complements random row splits by withholding attack categories, but it remains a dataset proxy and not evidence of performance on real unseen intrusions.
 
 ## 3. Research Questions
 
@@ -36,7 +35,7 @@ Security ML evaluation requires careful control of leakage, realistic splits, an
 
 ### 4.1 Dataset
 
-We used the user-supplied “CICIDS2017 Cleaned & Preprocessed” Kaggle dataset by `ericanacletoribe` [DATASET CITATION]. It contains 2,520,751 source rows, 52 numeric flow features, and the label column `Attack Type`. The seven observed broad labels correspond to benign traffic and six attack categories: Bots, Brute Force, DDoS, DoS, Port Scanning, and Web Attacks. The file is a contributor-prepared derivative. We have not independently verified its cleaning provenance, label correction process, or license. It must not be described as the official LycoS corrected release.
+We used the user-supplied “CICIDS2017 Cleaned & Preprocessed” Kaggle dataset by `ericanacletoribe` [5]. It contains 2,520,751 source rows, 52 numeric flow features, and the label column `Attack Type`. The seven observed broad labels correspond to benign traffic and six attack categories: Bots, Brute Force, DDoS, DoS, Port Scanning, and Web Attacks. The file is a contributor-prepared derivative. We have not independently verified its cleaning provenance, label correction process, or license. It must not be described as the official LycoS corrected release.
 
 ### 4.2 Cleaning and label audit
 
@@ -54,13 +53,13 @@ Each detector is fit only on benign training rows. For each of the six families,
 
 ### 5.2 Detectors
 
-**Isolation Forest (IF).** A tree ensemble that isolates observations through random feature splits. The negative of the implementation’s normality score is used so larger values indicate more anomalous traffic. Settings: 150 estimators and automatic maximum subsample size.
+**Isolation Forest (IF).** A tree ensemble that isolates observations through random feature splits [2]. The negative of the implementation’s normality score is used so larger values indicate more anomalous traffic. Settings: 150 estimators and automatic maximum subsample size.
 
-**PCA reconstruction.** PCA is fit to the standardized benign training matrix with 95% explained-variance retention using a full solver. The anomaly score is row-wise mean squared reconstruction error.
+**PCA reconstruction.** PCA is fit to the standardized benign training matrix with 95% explained-variance retention using a full solver. The anomaly score is row-wise mean squared reconstruction error. PCA sensitivity to model and aggregation choices is a known concern [3].
 
 **Rank fusion.** IF and PCA scores are each mapped to empirical percentiles using benign calibration scores. The two percentiles are averaged with equal weight. This fixed fusion avoids directly averaging differently scaled raw scores.
 
-**Autoencoder (exploratory only).** A small dense feed-forward autoencoder (hidden width 32, bottleneck 8, 30 epochs, batch size 512, Adam learning rate 0.001) is also implemented. Its evaluation used a deterministic stratified sample capped at 50,000 rows per family because full-data CPU training was impractical. It is not included in the full-data three-model statistical comparison.
+**Autoencoder (exploratory only).** A small dense feed-forward autoencoder (hidden width 32, bottleneck 8, 30 epochs, batch size 512, Adam learning rate 0.001) is also implemented. Kitsune is a related online ensemble of autoencoders for network intrusion detection [4]. Our evaluation used a deterministic stratified sample capped at 50,000 rows per family because full-data CPU training was impractical. It is not included in the full-data three-model statistical comparison.
 
 ### 5.3 Metrics and statistics
 
@@ -123,22 +122,25 @@ Future work should verify dataset provenance and license, validate on a second d
 
 Source and protocol: https://github.com/git-sakshii/ZeroDayAttack. The public repository contains code/configuration/documentation but not the locally downloaded dataset, local model bundles, or generated results. Dataset acquisition and all local artifact paths must therefore be documented for reproducibility. Add the final dataset citation/license statement here.
 
-## References (complete and verify before submission)
+## References
 
-1. Liu, F. T., Ting, K. M., and Zhou, Z.-H. “Isolation Forest.” *IEEE International Conference on Data Mining*, 2008. [Verify bibliographic details/DOI.]
-2. Rosay, A., Carlier, F., Cheval, E., and Leroux, P. “From CIC-IDS2017 to LYCOS-IDS2017: A corrected dataset for better performance.” WI-IAT 2021. DOI: 10.1145/3486622.3493973. [Cite only if discussing LycoS; this study used the Kaggle derivative instead.]
-3. Mirsky, Y. et al. “Kitsune: An Ensemble of Autoencoders for Online Network Intrusion Detection.” NDSS 2018. [Verify full details.]
-4. Arp, D. et al. “Dos and Don'ts of Machine Learning in Computer Security.” USENIX Security 2022. [Verify full details.]
-5. [Kaggle dataset author/title/date/license and access date: complete after verifying the dataset page.]
-6. [Add original PCA anomaly detection and benchmark dataset references used in Related Work. Verify all references through primary sources.]
+[1] D. Arp, E. Quiring, F. Pendlebury, A. Warnecke, F. Pierazzi, C. Wressnegger, L. Cavallaro, and K. Rieck, “Dos and Don’ts of Machine Learning in Computer Security,” in *Proc. 31st USENIX Security Symp.*, 2022, pp. 3971–3988. [Online]. Available: https://www.usenix.org/conference/usenixsecurity22/presentation/arp
+
+[2] F. T. Liu, K. M. Ting, and Z.-H. Zhou, “Isolation Forest,” in *Proc. 8th IEEE Int. Conf. on Data Mining (ICDM)*, 2008, pp. 413–422, doi: 10.1109/ICDM.2008.17.
+
+[3] H. Ringberg, A. Soule, J. Rexford, and C. Diot, “Sensitivity of PCA for traffic anomaly detection,” *ACM SIGMETRICS Performance Evaluation Review*, vol. 35, no. 1, pp. 109–120, 2007, doi: 10.1145/1269899.1254895.
+
+[4] Y. Mirsky, T. Doitshman, Y. Elovici, and A. Shabtai, “Kitsune: An Ensemble of Autoencoders for Online Network Intrusion Detection,” in *Proc. Network and Distributed System Security Symp. (NDSS)*, 2018, doi: 10.14722/ndss.2018.23204.
+
+[5] ericanacletoribe, “CICIDS2017 Cleaned and Preprocessed,” Kaggle dataset. [Online]. Available: https://www.kaggle.com/datasets/ericanacletoribe/cicids2017-cleaned-and-preprocessed. [Accessed: Nov. 23, 2026]. Dataset license and detailed cleaning provenance were not independently verified for this study.
 
 ---
 
 ## Submission checklist (remove this section before final submission)
 
-- Fill author names, college, course, date, venue, and instructor-required formatting.
-- Verify the Kaggle dataset page’s citation and license; if not verifiable, disclose this limitation to the instructor.
-- Replace placeholders; check every reference and citation. Do not submit placeholder citations.
+- Fill course/instructor and submission date, and confirm IEEE style and affiliation spelling with the college.
+- Verify whether the Kaggle dataset page provides a preferred citation and a license; if not, disclose this limitation to the instructor.
+- Confirm the college’s preferred department/affiliation wording.
 - Generate final tables/figures only from saved result files in `results/cicids2017_analysis/`.
 - Include or regenerate the family recall plot and critical-difference plots if required.
 - Decide whether the autoencoder sampled result belongs in the paper; keep it explicitly secondary/exploratory.
