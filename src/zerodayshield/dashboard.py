@@ -15,10 +15,18 @@ st.title("ZeroDayShield · Flow Replay")
 st.caption("Scores flow records with a frozen benign-trained detector. An alert is an anomaly lead, not proof of an attack.")
 
 model_file = st.sidebar.file_uploader("Model bundle (.joblib)", type=["joblib"])
+local_models = {
+    "Isolation Forest": Path("models/replay.joblib"),
+    "PCA reconstruction": Path("models/replay_pca.joblib"),
+    "IF + PCA score fusion": Path("models/replay_fusion.joblib"),
+    "Autoencoder": Path("models/replay_autoencoder.joblib"),
+}
+available_models = [name for name, path in local_models.items() if path.exists()]
+selected_model = st.sidebar.selectbox("Or select a locally trained model", ["Upload a model"] + available_models)
 flow_file = st.sidebar.file_uploader("Flow records (.csv or .parquet)", type=["csv", "parquet"])
-if model_file and flow_file:
+if (model_file or selected_model != "Upload a model") and flow_file:
     try:
-        bundle = joblib.load(model_file)
+        bundle = joblib.load(model_file if model_file else local_models[selected_model])
         if flow_file.name.lower().endswith(".parquet"):
             frame = pd.read_parquet(flow_file)
         else:
@@ -26,9 +34,12 @@ if model_file and flow_file:
         scored = score_frame(frame, bundle)
         alerts = scored[scored.alert]
         m1, m2, m3 = st.columns(3)
-        m1.metric("Flows scored", f"{len(scored):,}")
+        model_display = {"isolation_forest": "Isolation Forest", "pca": "PCA reconstruction",
+                         "rank_fusion": "IF + PCA score fusion", "autoencoder": "Autoencoder"}
+        m1.metric("Model", model_display.get(bundle["model"], bundle["model"]))
         m2.metric("Alerts", f"{len(alerts):,}")
-        m3.metric("Alert rate", f"{100 * len(alerts) / max(1, len(scored)):.2f}%")
+        m3.metric("Flows scored", f"{len(scored):,}")
+        st.caption(f"Alert rate: {100 * len(alerts) / max(1, len(scored)):.2f}% · Calibration target: {bundle['target_fpr']:.1%} FPR")
         if "attack_family" in scored:
             st.subheader("Recall by supplied family (offline labeled replay only)")
             st.dataframe(scored.groupby("attack_family").alert.mean().rename("alert_rate").sort_values(ascending=False), use_container_width=True)
