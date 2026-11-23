@@ -12,7 +12,7 @@ We implemented Isolation Forest, PCA reconstruction error, a small autoencoder, 
 
 ## 2. Dataset and preparation
 
-The local dataset is the user-supplied **CICIDS2017 Cleaned & Preprocessed** derivative from Kaggle, by `ericanacletoribe`. It is a contributor-prepared derivative, not confirmed as the official corrected LycoS release. Its cleaning provenance and license have not been independently verified. Describe it that way in the report and cite the Kaggle dataset; do not call it a verified corrected CICIDS2017 release.
+The local dataset is the user-supplied **CICIDS2017: Cleaned & Preprocessed** derivative from Kaggle, by Eric Anacleto Ribeiro (`ericanacletoribe`). The public Kaggle metadata API lists version 6 and the license label “CC0: Public Domain.” Its description says the publisher merged CICIDS2017 CSVs, removed duplicate rows/columns, handled infinite/missing values, normalized whitespace, performed feature selection, grouped labels, and removed rare Infiltration and Heartbleed labels. These are the publisher's documented steps and license declaration; our team did not independently reproduce the complete cleaning or perform a legal review. It is not confirmed as the official corrected LycoS release. Cite the Kaggle derivative and the original CICIDS2017 paper separately.
 
 The source CSV had 2,520,751 rows, 52 numeric flow features, and the label column `Attack Type`. It contains the broad categories benign/normal, Bots, Brute Force, DDoS, DoS, Port Scanning, and Web Attacks. Preparation removed 161 exact duplicate rows and quarantined 1,394 rows in 697 groups with identical features but conflicting labels. The retained Parquet has 2,519,196 rows:
 

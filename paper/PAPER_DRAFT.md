@@ -7,7 +7,7 @@ Department of Computer Science and Engineering (Artificial Intelligence), Galgot
 
 ## Abstract
 
-Network intrusion detectors are often evaluated on attack classes represented during training, which does not directly measure behavior on an unseen attack category. This study compares three benign-only anomaly-detection strategies on a Kaggle-prepared CICIDS2017 derivative using leave-one-attack-family-out (LOFO) evaluation. Isolation Forest, PCA reconstruction error, and equal-weight rank fusion were trained using benign traffic only. Thresholds were calibrated using separate benign calibration data at target false-positive rates (FPRs) of 0.1% and 1%. The dataset contains 2,519,196 retained flow records, 52 numeric features, and six aggregated attack families. Across six held-out-family trials, PCA produced the highest macro recall at the 1% target FPR (19.2%); rank fusion was highest at 0.1% (7.4%). Worst-family recall was zero for all methods at both operating points. Friedman tests did not identify statistically significant differences among the methods (p=0.094–0.097, six family blocks). These findings show that benchmark-level discrimination and operational alert budgets can leave substantial blind spots on some held-out families. The results are a single-dataset pilot: the Kaggle derivative’s cleaning provenance and license are unverified, and held-out families are a zero-day-style proxy rather than real zero-day attacks.
+Network intrusion detectors are often evaluated on attack classes represented during training, which does not directly measure behavior on an unseen attack category. This study compares three benign-only anomaly-detection strategies on a Kaggle-prepared CICIDS2017 derivative using leave-one-attack-family-out (LOFO) evaluation. Isolation Forest, PCA reconstruction error, and equal-weight rank fusion were trained using benign traffic only. Thresholds were calibrated using separate benign calibration data at target false-positive rates (FPRs) of 0.1% and 1%. The dataset contains 2,519,196 retained flow records, 52 numeric features, and six aggregated attack families. Across six held-out-family trials, PCA produced the highest macro recall at the 1% target FPR (19.2%); rank fusion was highest at 0.1% (7.4%). Worst-family recall was zero for all methods at both operating points. Friedman tests did not identify statistically significant differences among the methods (p=0.094–0.097, six family blocks). These findings show that benchmark-level discrimination and operational alert budgets can leave substantial blind spots on some held-out families. The results are a single-dataset pilot: the Kaggle derivative's publisher documents its cleaning pipeline and declares a CC0 license, but we did not independently audit the preprocessing or conduct a legal review; held-out families are a zero-day-style proxy rather than real zero-day attacks.
 
 **Keywords:** network intrusion detection; anomaly detection; CICIDS2017; held-out families; false-positive rate; score fusion
 
@@ -35,13 +35,13 @@ Security ML evaluation requires careful control of leakage, realistic splits, an
 
 ### 4.1 Dataset
 
-We used the user-supplied “CICIDS2017 Cleaned & Preprocessed” Kaggle dataset by `ericanacletoribe` [5]. It contains 2,520,751 source rows, 52 numeric flow features, and the label column `Attack Type`. The seven observed broad labels correspond to benign traffic and six attack categories: Bots, Brute Force, DDoS, DoS, Port Scanning, and Web Attacks. The file is a contributor-prepared derivative. We have not independently verified its cleaning provenance, label correction process, or license. It must not be described as the official LycoS corrected release.
+We used the user-supplied “CICIDS2017: Cleaned & Preprocessed” Kaggle dataset by Eric Anacleto Ribeiro [5]. Kaggle's public dataset metadata identifies version 6, last updated January 12, 2025, and lists the license as “CC0: Public Domain.” The dataset description reports that original CICIDS2017 CSVs were merged; duplicate rows and columns removed; infinities replaced with missing values; rows with missing values removed; column whitespace normalized; constant and highly correlated features and other features selected out; labels aggregated into broad `Attack Type` categories; and rare Infiltration and Heartbleed labels removed. These are the dataset publisher's documented steps and license declaration; our team did not independently reproduce or audit the publisher's preprocessing or legal status. This is a contributor-prepared derivative and is not confirmed as the official LycoS corrected release. The downloaded file contains 2,520,751 rows, 52 numeric flow features, and the label column `Attack Type`.
 
 ### 4.2 Cleaning and label audit
 
 The preparation script normalized label strings, removed 161 exact duplicate rows, and quarantined 1,394 rows across 697 groups whose non-label features were identical while labels conflicted. The prepared Parquet contains 2,519,196 rows: 2,094,199 benign, 193,615 DoS, 128,011 DDoS, 90,130 port scanning, 9,150 brute force, 2,143 web attacks, and 1,948 bots. Automatic normalization is not ground-truth correction. Results are limited to the six aggregate attack labels available in the file.
 
-The source CSV SHA-256 is `0ce5a39edffcde3fce59d0dc4aabc9b1f6acab2c626fd7163be9c694f224c292`; prepared Parquet SHA-256 is `34c6c45d067bbbfa9d8fc91b40fc6606801c8e103896db08710adff4c41a2be7`. Dataset files are not included in the public repository.
+The Kaggle dataset description links its processing notebook and project repository [7]. The original CICIDS2017 dataset page asks users to cite the dataset paper [6]. The source CSV SHA-256 is `0ce5a39edffcde3fce59d0dc4aabc9b1f6acab2c626fd7163be9c694f224c292`; prepared Parquet SHA-256 is `34c6c45d067bbbfa9d8fc91b40fc6606801c8e103896db08710adff4c41a2be7`. Dataset files are not included in the public repository.
 
 ## 5. Methods
 
@@ -120,7 +120,7 @@ Future work should verify dataset provenance and license, validate on a second d
 
 ## Data and Code Availability
 
-Source and protocol: https://github.com/git-sakshii/ZeroDayAttack. The public repository contains code/configuration/documentation but not the locally downloaded dataset, local model bundles, or generated results. Dataset acquisition and all local artifact paths must therefore be documented for reproducibility. Add the final dataset citation/license statement here.
+Source and protocol: https://github.com/git-sakshii/ZeroDayAttack. The public repository contains code/configuration/documentation but not the locally downloaded dataset, local model bundles, or generated results. Dataset acquisition and all local artifact paths must therefore be documented for reproducibility.
 
 ## References
 
@@ -132,14 +132,18 @@ Source and protocol: https://github.com/git-sakshii/ZeroDayAttack. The public re
 
 [4] Y. Mirsky, T. Doitshman, Y. Elovici, and A. Shabtai, “Kitsune: An Ensemble of Autoencoders for Online Network Intrusion Detection,” in *Proc. Network and Distributed System Security Symp. (NDSS)*, 2018, doi: 10.14722/ndss.2018.23204.
 
-[5] ericanacletoribe, “CICIDS2017 Cleaned and Preprocessed,” Kaggle dataset. [Online]. Available: https://www.kaggle.com/datasets/ericanacletoribe/cicids2017-cleaned-and-preprocessed. [Accessed: Nov. 23, 2026]. Dataset license and detailed cleaning provenance were not independently verified for this study.
+[5] E. A. Ribeiro, “CICIDS2017: Cleaned & Preprocessed,” Kaggle dataset, version 6, Jan. 12, 2025. Kaggle metadata lists the license as CC0: Public Domain. [Online]. Available: https://www.kaggle.com/datasets/ericanacletoribe/cicids2017-cleaned-and-preprocessed. [Accessed: Nov. 23, 2026].
+
+[6] I. Sharafaldin, A. H. Lashkari, and A. A. Ghorbani, “Toward Generating a New Intrusion Detection Dataset and Intrusion Traffic Characterization,” in *Proc. 4th Int. Conf. on Information Systems Security and Privacy (ICISSP)*, 2018, pp. 108–116, doi: 10.5220/0006639801080116.
+
+[7] E. A. Ribeiro, “CICIDS2017—Comprehensive Data Processing for ML,” Kaggle notebook; and “ML Intrusion Detection CICIDS2017,” GitHub repository. [Online]. Available: https://www.kaggle.com/code/ericanacletoribeiro/cicids2017-comprehensive-data-processing-for-ml and https://github.com/anacletu/ml-intrusion-detection-cicids2017. [Accessed: Nov. 23, 2026].
 
 ---
 
 ## Submission checklist (remove this section before final submission)
 
 - Fill course/instructor and submission date, and confirm IEEE style and affiliation spelling with the college.
-- Verify whether the Kaggle dataset page provides a preferred citation and a license; if not, disclose this limitation to the instructor.
+- Record that Kaggle metadata declares CC0, and retain the Kaggle dataset page and original CICIDS2017 attribution/citation. Ask the instructor if the institution requires additional license review.
 - Confirm the college’s preferred department/affiliation wording.
 - Generate final tables/figures only from saved result files in `results/cicids2017_analysis/`.
 - Include or regenerate the family recall plot and critical-difference plots if required.
