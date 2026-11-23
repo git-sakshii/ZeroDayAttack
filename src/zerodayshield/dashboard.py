@@ -6,7 +6,9 @@ import joblib
 import pandas as pd
 import streamlit as st
 
-from .replay import load_frame, score_frame
+# Streamlit executes this file as a script, so a package-relative import has
+# no parent package. Use the installed package's absolute import instead.
+from zerodayshield.replay import load_frame, score_frame
 
 st.set_page_config(page_title="ZeroDayShield Replay", page_icon="🛡️", layout="wide")
 st.title("ZeroDayShield · Flow Replay")
