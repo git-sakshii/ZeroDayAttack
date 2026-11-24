@@ -2,7 +2,7 @@
 
 **Prepared for:** team presentation and instructor questions  
 **Project type:** research prototype for flow-based network anomaly detection  
-**Status:** offline research pipeline, replay dashboard, experimental live-capture scoring path, both directions of the CICIDS2017/UNSW-NB15 transfer comparison, and a sampled supervised known-attack/unknown-rejection reference are implemented. Synthetic-PCAP feature mapping and scoring were smoke-checked. Real interface capture has not been validated because the Windows Npcap capture driver is not detected.
+**Status:** the offline research pipeline, replay dashboard, experimental live-flow scoring path, both CICIDS2017/UNSW-NB15 transfer directions, and a sampled supervised known-attack/unknown-rejection reference are implemented. An IEEE-style two-column paper draft, Word file, and PDF have been prepared with project results, diagrams, and tables. Synthetic-PCAP feature mapping and scoring were smoke-checked. Real interface capture has not been validated because a packet-capture provider is not detected on the Windows machine.
 
 ## 1. Project in one minute
 
@@ -213,7 +213,7 @@ The public repo contains source, protocol/configuration, and documentation. It d
 
 **Built:** data preparation/audit code, Isolation Forest/PCA/autoencoder/fusion detectors, fixed-protocol LOFO runner, result analysis, replay train-and-score CLI, four local replay bundles, and a Streamlit dashboard with single-model scoring and side-by-side local-model comparison.
 
-**Not yet finished:** live capture runtime validation on an authorized Windows interface; full-data autoencoder LOFO; independent real-network validation; production hardening. A capture/scoring code path exists and a synthetic PCAP confirmed feature mapping and scoring for one example flow, but this is not evidence of a working real-network live demo. Npcap is not detected on the development machine. Do not describe it as validated live monitoring until an authorized interface capture succeeds and its benign alert behavior is recorded.
+**Remaining:** validate live capture on an authorized Windows interface after installing/configuring a packet-capture provider; run full-data autoencoder LOFO if time and compute allow; obtain independent real-network validation; and apply any venue-specific paper requirements. The IEEE-style paper draft is complete as a project-results draft, but the team still needs to fill the course, instructor, venue, and any required AI-assistance statement, then check the final venue template and submission rules. The capture/scoring code path exists and a synthetic PCAP confirmed feature mapping and scoring for one example flow, but this is not evidence of a working real-network live demo. Do not describe it as validated live monitoring until an authorized interface capture succeeds and its benign alert behavior is recorded.
 
 ## 10. Likely instructor questions and short answers
 
@@ -254,7 +254,7 @@ A: The primary IF, PCA, and fusion detectors learned from benign CICIDS2017 flow
 A: Say instead: “We train the detectors on benign data. During evaluation, we withhold an entire labeled attack family from fitting and cutoff selection, then test whether the frozen detectors flag it.” The attack family is unseen by the model, not unknown to the dataset or research team.
 
 **Q: Is the project doing my original idea?**  
-A: Partly. The benign-only detectors learn a normal-traffic baseline and flag departures, which is the core idea. The held-out-family test checks whether they generalize beyond attack families used by the model. It is still an offline benchmark experiment: it does not prove detection of arbitrary zero-day attacks, and the dashboard currently scores saved flow records instead of capturing live traffic.
+A: Partly. The benign-only detectors learn a normal-traffic baseline and flag departures, which is the core idea. The held-out-family test checks whether they generalize beyond attack families used by the model. The benchmark does not prove detection of arbitrary zero-day attacks. The dashboard scores saved flow records, and an experimental live scoring path exists, but real interface capture remains unvalidated.
 
 **Q: Why might a real new attack still be missed?**  
 A: An attack can resemble normal traffic in the features we measure. A detector can only flag deviations that its features and learned boundary make visible. Stealthy attacks may look normal in flow summaries, and benign traffic that changes may look anomalous. We observed very low or zero recall for some held-out families, which is exactly why we avoid claiming universal zero-day detection.
@@ -269,7 +269,7 @@ A: There is no universal winner in this experiment. PCA had the highest macro re
 A: We chose thresholds using benign CIC calibration records, froze them, and applied them to the UNSW test mirror. On UNSW, benign FPR rose as high as about 7.56% when the CIC calibration target was 1%. This means more benign flows were flagged in the target dataset; a percentage calibrated on one dataset is not guaranteed on another.
 
 **Q: What does the dashboard actually do?**  
-A: It loads a previously trained local model bundle and a CSV/Parquet of flow records, calculates each record’s score, and flags records whose scores cross the stored cutoff. In comparison mode it scores the same uploaded file with available local models. The balanced replay CSV is only a demonstration. The dashboard does not capture live packets, prove an attack, or block traffic.
+A: It loads a previously trained local model bundle and a CSV/Parquet of flow records, calculates each record’s score, and flags records whose scores cross the stored cutoff. In comparison mode it scores the same uploaded file with available local models. The balanced replay CSV is only a demonstration. The dashboard can display scored live flow summaries when the experimental capture path is running, but that path has not been validated on a real interface. It does not prove an attack or block traffic.
 
 **Q: Is “alert rate” the same as false-positive rate?**  
 A: No. Alert rate is all flagged rows divided by all rows. FPR is flagged benign rows divided by all benign rows. Recall is flagged attack rows divided by all attack rows. They have different denominators.
@@ -316,9 +316,19 @@ A: No. It is a research prototype that flags anomalous flows for review. It does
 5. Main LOFO table at 0.1% and 1% FPR.
 6. Explain the statistical result and zero worst-family recall.
 7. Demonstrate dashboard comparison using the balanced replay CSV; label it as a demo.
-8. Both cross-dataset transfer directions and the exploratory supervised rejection result, then limitations and next steps: full-data autoencoder and feature-compatible live capture.
+8. Both cross-dataset transfer directions and the exploratory supervised rejection result.
+9. Paper status and limitations: the IEEE-style draft is prepared; explain that full-data autoencoder results and real-interface capture validation remain incomplete, and leave venue-specific formatting until the venue is known.
 
-## 12. Source-of-truth files for reported numbers
+## 12. Research paper status and contents
+
+An IEEE-style, two-column A4 paper draft has been prepared from the saved project results. It includes the research questions, protocol and dataset limitations, the benign-only and supervised-with-rejection approaches, both transfer directions, the exploratory statistical comparisons, and the live-capture validation status. The draft includes three figures (LOFO protocol flow, system architecture, and family-recall heatmap) and tables for dataset/profile details, mapped features, primary LOFO results, supervised results, both transfer directions, and system validation. The team should verify author details and citations, fill in course/instructor/venue and any required AI-assistance disclosure, and apply the official venue template once known. No claim of true zero-day detection or validated real-network capture is made.
+
+- Editable source: `paper/PAPER_DRAFT.md`
+- Word draft: `paper/ZeroDayShield_Research_Paper.docx`
+- PDF draft: `paper/ZeroDayShield_Research_Paper.pdf`
+- Figure sources and generation scripts: `paper/figures/`, `paper/build_figures.py`, and `paper/build_ieee_paper.py`
+
+## 13. Source-of-truth files for reported numbers
 
 - Full-data three-model metrics: `results/cicids2017_core/lofo_metrics.csv`
 - Full-data summary: `results/cicids2017_analysis/summary.md`
@@ -331,5 +341,5 @@ A: No. It is a research prototype that flags anomalous flows for review. It does
 - Dataset audit: `data/processed/cicids2017_cleaned.audit.json`
 - Run metadata and checksums: `results/cicids2017_core/run.json`
 
-All data and result paths above are local files and are not in the public repository. Recreate them by obtaining the dataset and following the repository README.
+All data and result paths above are local files and are not in the public repository. Recreate them by obtaining the dataset and following the repository README. The paper source and rendered Word/PDF drafts are tracked in the repository under `paper/`; final venue-specific formatting and any required course disclosure remain for the team to complete.
 
