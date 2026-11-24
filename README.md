@@ -120,3 +120,17 @@ The analysis averages repeated seeds within each dataset-family trial before sta
 
 The supplied Kaggle archive and its audit record are documented in `DATASETS.md`. The extracted CSV is `data/raw/cicids2017_cleaned.csv`; the cleaned Parquet is `data/processed/cicids2017_cleaned.parquet`. The predeclared family schedule is in `configs/family_schedule.json`. The first full-data LOFO comparison (Isolation Forest, PCA, and rank fusion; three seeds; 1% and 0.1% FPR budgets) is in `results/cicids2017_core/`, with statistical summaries in `results/cicids2017_analysis/`.
 
+## Research paper
+
+The IEEE conference-style A4 two-column paper is in `paper/`. The Markdown draft is the editable source of the manuscript text. When the local experiment outputs are available, regenerate the result-based figures and the four-strategy statistical check, then rebuild the Word document:
+
+```powershell
+$env:PYTHONPATH = "src"
+python -m pip install -r requirements-paper.txt
+python paper/analyze_four_strategy.py
+python paper/build_figures.py
+python paper/build_ieee_paper.py
+```
+
+The Word document can be exported to PDF from Microsoft Word. Numeric entries in the manuscript were copied from the saved local CSV summaries and family metrics. The source dataset, model bundles, and generated result files remain local and are not published in Git. The venue is not yet known, so apply that venue's exact IEEE template and page limits before submission.
+
