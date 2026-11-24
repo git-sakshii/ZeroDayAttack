@@ -14,6 +14,42 @@ st.set_page_config(page_title="ZeroDayShield Replay", page_icon="🛡️", layou
 st.title("ZeroDayShield · Flow Replay")
 st.caption("Scores flow records with a frozen benign-trained detector. An alert is an anomaly lead, not proof of an attack.")
 
+show_live_output = st.sidebar.checkbox("Monitor local live-capture output")
+if show_live_output:
+    st.subheader("Live capture output")
+    st.caption("This view reads locally scored flow summaries. It does not start packet capture. Flows are scored when the extractor finalizes them, so alerts can be delayed.")
+    live_path = Path("data/live/scored_flows.csv")
+
+    @st.fragment(run_every=2)
+    def render_live_output():
+        if not live_path.exists():
+            st.info("No live capture file yet. Start capture from an elevated PowerShell window and monitor only a network you own or have permission to monitor.")
+            st.code("$env:PYTHONPATH = 'src'\n.\\.venv\\Scripts\\python.exe -m zerodayshield.live --list-interfaces\n.\\.venv\\Scripts\\python.exe -m zerodayshield.live --interface 'Wi-Fi' --model models/replay.joblib", language="powershell")
+            return
+        try:
+            live = pd.read_csv(live_path, low_memory=False)
+            scored_live = live[live["status"].astype(str) == "scored"]
+            alerts_live = scored_live[scored_live["alert"].astype(str).str.casefold() == "true"]
+            failures_live = live[live["status"].astype(str) != "scored"]
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Flows scored", f"{len(scored_live):,}")
+            c2.metric("Anomaly alerts", f"{len(alerts_live):,}")
+            c3.metric("Flows not scored", f"{len(failures_live):,}")
+            st.caption(f"Local file: {live_path} · event alert rate: {len(alerts_live) / max(1, len(scored_live)):.2%}. This is not benign FPR because live traffic has no ground-truth labels.")
+            st.subheader("Recent anomaly alerts")
+            st.dataframe(alerts_live.tail(100).iloc[::-1], use_container_width=True)
+            if not failures_live.empty:
+                with st.expander("Flows skipped because feature scoring failed"):
+                    st.dataframe(failures_live.tail(50).iloc[::-1], use_container_width=True)
+            st.download_button("Download live scored flows", live.to_csv(index=False), "zerodayshield_live_flows.csv", "text/csv")
+            if st.button("Clear local live output", key="clear_live_output"):
+                live_path.unlink(missing_ok=True)
+                st.rerun()
+        except Exception as exc:
+            st.error(f"Could not read live capture output: {exc}")
+
+    render_live_output()
+
 model_file = st.sidebar.file_uploader("Model bundle (.joblib)", type=["joblib"])
 local_models = {
     "Isolation Forest": Path("models/replay.joblib"),

@@ -62,4 +62,8 @@ The reproducible run is `python -m zerodayshield.cross_dataset`. Its code, proto
 - UNSW-NB15 landing page: <https://research.unsw.edu.au/projects/unsw-nb15-dataset>
 - N. Moustafa and J. Slay, “UNSW-NB15: a comprehensive data set for network intrusion detection systems (UNSW-NB15 network data set),” MilCIS, 2015, DOI: <https://doi.org/10.1109/MilCIS.2015.7348942>.
 
+### Reverse transfer run
+
+The reverse experiment is implemented in `src/zerodayshield/cross_dataset_reverse.py`. It fits Isolation Forest, PCA reconstruction, and equal-weight score fusion on benign UNSW-NB15 training rows, calibrates thresholds on a separate benign-only UNSW split, and then evaluates frozen scores on the CIC Kaggle derivative and UNSW fixed test partition. It uses the same nine approximate features and three seeds as the forward direction. Results and protocol are saved under `results/cross_dataset_reverse/`. On CIC, PCA and fusion exceeded the intended alert cost substantially (PCA benign FPR about 39.6–43.6%; fusion up to 11.4%); these are transfer-drift findings, not operational success. This remains a comparison between public benchmark testbeds, not validation on an independent real network.
+
 No dataset files are included in this repository. The converter's automatic label normalization is a convenience for auditing and is not a correction of ground truth.

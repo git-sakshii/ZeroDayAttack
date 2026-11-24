@@ -7,6 +7,8 @@ __pycache__/
 .ruff_cache/
 data/raw/*
 data/processed/*
+data/live/*
+!data/live/.gitkeep
 tmp/
 !data/raw/.gitkeep
 !data/processed/.gitkeep

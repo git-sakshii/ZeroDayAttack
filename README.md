@@ -56,7 +56,7 @@ $env:PYTHONPATH = "src"
 .\.venv\Scripts\python.exe -m zerodayshield.cross_dataset
 ```
 
-The report files are written to `results/cross_dataset_unsw/`. The dataset copies and generated results remain local and are excluded from Git. Read `DATASETS.md` for the source, hashes, feature mapping, and transfer limits.
+The report files are written to `results/cross_dataset_unsw/`. The reverse UNSW-to-CIC run is implemented in `src/zerodayshield/cross_dataset_reverse.py` and writes to `results/cross_dataset_reverse/`. Dataset copies and generated results remain local and are excluded from Git. Read `DATASETS.md` for the source, hashes, feature mapping, and transfer limits.
 
 ## Flow replay and alert dashboard
 
@@ -79,7 +79,34 @@ python -m pip install -r requirements-dashboard.txt
 streamlit run src/zerodayshield/dashboard.py
 ```
 
-The dashboard accepts a model bundle and a flow CSV/Parquet, displays alerts and per-family alert rates when labels are present, and allows downloading scored results. This is offline flow replay; it does not capture raw packets. A packet capture source still requires a compatible flow builder and verified feature mapping before live alerts can be claimed.
+The dashboard accepts a model bundle and a flow CSV/Parquet, displays alerts and per-family alert rates when labels are present, and allows downloading scored results. Its established path is offline flow replay. An experimental live-capture path is documented below; its feature mapping and scoring have been smoke-checked with a synthetic PCAP, but it has not yet been validated on the team's Windows network.
+
+## Experimental live flow capture
+
+The optional live path uses a pinned CICFlowMeter-compatible extractor and scores each completed flow with a local benign-trained bundle. It writes only flow time, protocol/port, model score, alert status, and scoring errors; it does not save raw packets or endpoint IP addresses. Flow summaries can still reveal sensitive activity, so keep the output local and clear it after the demo. Capture only a network you own or have explicit permission to monitor.
+
+Install the optional extractor from the pinned revision:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-live.txt
+```
+
+On Windows, install Npcap from its official site and run capture from an elevated PowerShell window. The live capture tool requires the Npcap driver and administrator privileges. Start the dashboard in a normal PowerShell window:
+
+```powershell
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe -m streamlit run src/zerodayshield/dashboard.py
+```
+
+In the elevated window, list interfaces and begin a short capture on the authorized interface:
+
+```powershell
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe -m zerodayshield.live --list-interfaces
+.\.venv\Scripts\python.exe -m zerodayshield.live --interface "Wi-Fi" --model models/replay.joblib
+```
+
+Type `YES` at the prompt only after confirming permission. Stop with Ctrl+C. Flows are scored after termination or timeout, so a long-lived connection may not produce an alert immediately. In the dashboard, enable **Monitor local live-capture output**. The live output does not contain ground-truth labels; its event alert rate is not benign FPR. This is an experimental demo and needs a labeled replay or independent dataset for quantitative validation. Before describing it as a tested live detector in the paper, confirm that the local Npcap capture actually works and record the interface, duration, feature compatibility outcome, and benign alert rate from an authorized demo.
 
 Summarize a completed LOFO run and produce grouped bootstrap intervals and (when enough complete trial blocks exist) Friedman/Nemenyi comparisons:
 

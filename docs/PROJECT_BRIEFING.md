@@ -2,13 +2,13 @@
 
 **Prepared for:** team presentation and instructor questions  
 **Project type:** research prototype for flow-based network anomaly detection  
-**Status:** offline research pipeline and replay dashboard implemented; a CICIDS2017-to-UNSW-NB15 transfer experiment is complete. Live capture remains future work.
+**Status:** offline research pipeline, replay dashboard, experimental live-capture scoring path, both directions of the CICIDS2017/UNSW-NB15 transfer comparison, and a sampled supervised known-attack/unknown-rejection reference are implemented. Synthetic-PCAP feature mapping and scoring were smoke-checked. Real interface capture has not been validated because the Windows Npcap capture driver is not detected.
 
 ## 1. Project in one minute
 
 ZeroDayShield compares detectors trained on benign network-flow records. The research question is whether a detector can flag traffic from an attack family it did not see during training, and how many benign records it flags along the way. We approximate a “new” attack by holding out one complete labeled attack family for testing. This is a zero-day-style benchmark proxy, not a real zero-day test.
 
-We implemented Isolation Forest, PCA reconstruction error, a small autoencoder, and equal-weight rank fusion of Isolation Forest and PCA. We calibrated thresholds using a separate benign calibration split, then evaluated attack recall and benign false-positive rate. We also built an offline Streamlit dashboard that scores uploaded flow records. It does not capture live packets yet.
+We implemented Isolation Forest, PCA reconstruction error, a small autoencoder, and equal-weight rank fusion of Isolation Forest and PCA. We calibrated thresholds using a separate benign calibration split, then evaluated attack recall and benign false-positive rate. The Streamlit dashboard scores uploaded flow records and can display a local stream of scored live flow summaries when the optional capture process is running. Live packet capture requires Npcap and administrator permission on Windows and is not yet validated on the team's real network.
 
 ### The most important idea: what “zero-day” means here
 
@@ -71,7 +71,7 @@ Each component’s score is converted to a percentile using benign calibration s
 
 ### Alternatives considered
 
-One-Class SVM, Local Outlier Factor, ECOD/COPOD, GMM/Mahalanobis, Kitsune-like ensembles, and a supervised known-attack classifier with an unknown-rejection rule are possible additions. We have not implemented/evaluated those here. Recurrent/Transformer/GNN models were not prioritized because these data are tabular flow summaries without sequence or graph structure in the current setup.
+One-Class SVM, Local Outlier Factor, ECOD/COPOD, GMM/Mahalanobis, and Kitsune-like ensembles remain possible additions. We also implemented a sampled supervised HistGradientBoosting known-attack/unknown-rejection reference; see its limited results below. Recurrent/Transformer/GNN models were not prioritized because these data are tabular flow summaries without sequence or graph structure in the current setup.
 
 ## 4.1 Related research: Shone et al. (2018)
 
@@ -111,6 +111,34 @@ The models and preprocessors were fit using CIC benign training rows only. Thres
 | 1.0% | IF + PCA rank fusion | 1.06% | 3.04% | 0.984% | 7.560% |
 
 The external UNSW FPR rose above the CIC calibration target for every method and budget. The higher UNSW macro recall therefore does not mean transfer improved detection at a controlled false-alarm cost: the frozen thresholds also flagged more benign UNSW flows. Worst-family recall was zero for each method in both datasets. Treat this as a descriptive result for one transfer direction; attack-family definitions differ between datasets, and this nine-feature run is separate from the 52-feature primary experiment.
+
+## 5B. Reverse transfer: UNSW-NB15 to CICIDS2017
+
+We also reversed the direction. Isolation Forest, PCA reconstruction, and equal-weight rank fusion were fit using only benign rows from the UNSW-NB15 training partition; preprocessing used those benign training rows and thresholds used a separate benign calibration split. The frozen scores were evaluated on the CIC Kaggle derivative and on the fixed UNSW test partition. Both datasets use the same nine approximate semantic features described above. The 0.1% and 1% values are calibration targets, not guaranteed test FPRs.
+
+| Evaluation set | Calibration target | Model | Macro family recall | Worst-family recall | Mean benign FPR |
+|---|---:|---|---:|---:|---:|
+| CIC derivative | 0.1% | Isolation Forest | 0.08% | 0.00% | 0.16% |
+| CIC derivative | 0.1% | PCA reconstruction | 66.98% | 15.60% | 39.61% |
+| CIC derivative | 0.1% | IF + PCA rank fusion | 0.62% | 0.00% | 0.54% |
+| CIC derivative | 1.0% | Isolation Forest | 0.68% | 0.00% | 0.41% |
+| CIC derivative | 1.0% | PCA reconstruction | 72.87% | 45.09% | 43.61% |
+| CIC derivative | 1.0% | IF + PCA rank fusion | 6.50% | 0.01% | 11.39% |
+
+The standout PCA recall is accompanied by an unusably high benign alert rate on CIC; it is not a controlled-cost win. The same-domain UNSW test behaved much closer to its calibration targets: mean benign FPRs were 0.12%, 0.23%, and 0.20% for IF, PCA, and fusion at the 0.1% target, and 0.83%, 2.06%, and 1.56% at the 1% target. This asymmetry illustrates dataset and feature-distribution shift. The exact per-family CSVs and run protocol are local under `results/cross_dataset_reverse/`; this result is one public-benchmark transfer direction, not independent real-network evidence.
+
+## 5C. Supervised known-attack classifier with unknown rejection
+
+This contrasting strategy uses benign traffic plus labeled examples from the attack families considered known during training. For each LOFO fold, one complete attack family is excluded from training; the classifier is a HistGradientBoosting model. A high predicted known-attack score or low confidence across learned classes contributes to the unusualness score. The alert cutoff is still set using only a separate benign calibration split. Thus it does not use held-out test labels to choose the cutoff, but it does use labels for the other attack families during fitting.
+
+The run uses three seeds, six held-out families, up to 1,000 training rows per class, and 15 boosting iterations. It is a CPU-friendly exploratory setting, not a tuned or full-data supervised result.
+
+| Calibration target | Macro family recall | Worst family after averaging seeds | Mean benign test FPR |
+|---:|---:|---:|---:|
+| 0.1% | 3.52% | 0.00% | 0.094% |
+| 1.0% | 15.12% | 0.28% | 1.002% |
+
+At the 1% target, recall was strongest on held-out DDoS (62.3%) and weakest on web attacks (0.28%). At 0.1%, it detected almost none of the held-out families consistently. Across the six family blocks, a four-model Friedman comparison with IF, PCA, and fusion gave p=0.158 at the 0.1% target and p=0.054 at 1%; neither crosses the conventional 0.05 significance threshold. Six blocks give limited statistical power, and the supervised model uses sampled training rows, so treat this as exploratory. Saved metrics and settings are in `results/supervised_rejection/`.
 
 ### Important demo comparison distinction
 
@@ -185,7 +213,7 @@ The public repo contains source, protocol/configuration, and documentation. It d
 
 **Built:** data preparation/audit code, Isolation Forest/PCA/autoencoder/fusion detectors, fixed-protocol LOFO runner, result analysis, replay train-and-score CLI, four local replay bundles, and a Streamlit dashboard with single-model scoring and side-by-side local-model comparison.
 
-**Not yet built/finished:** live packet capture and compatible live flow-feature extraction; supervised classifier with an unknown-rejection rule; reverse UNSW-to-CIC transfer; full-data autoencoder LOFO; independent real-network validation; production hardening. The dashboard currently replays saved flow records and should not be described as live monitoring.
+**Not yet finished:** live capture runtime validation on an authorized Windows interface; full-data autoencoder LOFO; independent real-network validation; production hardening. A capture/scoring code path exists and a synthetic PCAP confirmed feature mapping and scoring for one example flow, but this is not evidence of a working real-network live demo. Npcap is not detected on the development machine. Do not describe it as validated live monitoring until an authorized interface capture succeeds and its benign alert behavior is recorded.
 
 ## 10. Likely instructor questions and short answers
 
@@ -262,13 +290,19 @@ A: No. Friedman p-values were about 0.097 and 0.094, with six family blocks, and
 A: For CIC, we inspected rows, labels, features, duplicates, and conflicting feature-identical labels, but we did not independently recreate the Kaggle publisher’s full cleaning process or audit the license. For UNSW, documented partition counts and labels were checked and SHA-256 hashes pin the exact mirror copies we used. UNSW does not publish those hashes, so we cannot claim the files were authenticated byte-for-byte against the provider’s originals.
 
 **Q: What is missing before this becomes a stronger system?**  
-A: A fuller evaluation with a supervised known-attack plus unknown-rejection reference, reverse UNSW-to-CIC transfer, stronger independent network validation, and a verified live flow extractor/capture path. Live capture should only be attempted on a network we own or are authorized to monitor. The current demo is offline replay.
+A: Full-data autoencoder, a broader/tuned supervised-reference comparison, real-interface validation of the experimental capture path, and evaluation on a genuinely independent network. Live capture should only be attempted on a network we own or are authorized to monitor. Until Npcap and a real authorized capture are confirmed, use offline replay for the demo.
+
+**Q: Did you complete live capture?**
+A: We added an experimental capture-to-flow-to-score code path and checked feature mapping on a synthetic PCAP. It writes a privacy-minimized scored-flow file without raw packets or endpoint IPs. We have not validated it on a real interface: Npcap is not currently detected on the Windows machine, and no real-network alert results are available. We should describe this as implemented but not yet operationally validated.
 
 **Q: What did the cross-dataset experiment show?**
 A: We trained and calibrated on CIC benign traffic, then froze the pipeline for the fixed UNSW-NB15 test-partition mirror using nine mapped features. CIC-calibrated thresholds did not preserve their FPR on UNSW: observed benign FPR reached about 5.9–7.6% at the 1% calibration target. The feature mapping and datasets are imperfect testbed proxies, so this is a limited transfer result.
 
+**Q: What did the reverse transfer show?**
+A: Training and calibrating on benign UNSW records then testing on CIC produced severe alert drift for PCA and fusion. PCA's macro recall was high only alongside a 39.6–43.6% benign FPR on CIC. This is not evidence that it is a better detector; it shows that transfer can break the alert budget. Both directions use public benchmark datasets and approximate feature mapping.
+
 **Q: What is the main weakness today?**  
-A: Generalization is weak for some held-out families at low false-positive budgets; transfer causes substantial false-alarm drift; and live capture is not implemented.
+A: Generalization is weak for some held-out families at low false-positive budgets; transfer causes substantial false-alarm drift; and the experimental capture code has not been validated against a real network interface.
 
 **Q: Is it ready to block attacks?**  
 A: No. It is a research prototype that flags anomalous flows for review. It does not block traffic and has not been validated as a production security control.
@@ -282,7 +316,7 @@ A: No. It is a research prototype that flags anomalous flows for review. It does
 5. Main LOFO table at 0.1% and 1% FPR.
 6. Explain the statistical result and zero worst-family recall.
 7. Demonstrate dashboard comparison using the balanced replay CSV; label it as a demo.
-8. Cross-dataset transfer result, then limitations and next steps: reverse-direction transfer, supervised rejection reference, and feature-compatible live capture.
+8. Both cross-dataset transfer directions and the exploratory supervised rejection result, then limitations and next steps: full-data autoencoder and feature-compatible live capture.
 
 ## 12. Source-of-truth files for reported numbers
 
@@ -292,6 +326,8 @@ A: No. It is a research prototype that flags anomalous flows for review. It does
 - Balanced dashboard replay comparison: `results/replay/balanced_model_comparison.csv`
 - Cross-dataset family metrics, means, and summary: `results/cross_dataset_unsw/cross_dataset_family_metrics.csv`, `cross_dataset_family_means.csv`, and `cross_dataset_summary.csv`
 - Cross-dataset input hashes and run metadata: `results/cross_dataset_unsw/cross_dataset_run.json`
+- Reverse transfer family metrics, summary, protocol, and run metadata: `results/cross_dataset_reverse/`
+- Supervised reference metrics, summary, protocol, and run metadata: `results/supervised_rejection/`
 - Dataset audit: `data/processed/cicids2017_cleaned.audit.json`
 - Run metadata and checksums: `results/cicids2017_core/run.json`
 
